@@ -1,0 +1,2265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vocab Recall Coach V2</title>
+
+<!-- SheetJS for Excel Import/Export -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+/* ===== CSS VARIABLES ===== */
+:root {
+  --bg: #f0f4f8;
+  --surface: #ffffff;
+  --surface2: #f8fafc;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --text2: #64748b;
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #e0e7ff;
+  --success: #10b981;
+  --success-light: #d1fae5;
+  --danger: #ef4444;
+  --danger-light: #fee2e2;
+  --warning: #f59e0b;
+  --warning-light: #fef3c7;
+  --info: #3b82f6;
+  --info-light: #dbeafe;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: all 0.25s ease;
+}
+body.dark {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface2: #162032;
+  --border: #334155;
+  --text: #f1f5f9;
+  --text2: #94a3b8;
+  --primary: #818cf8;
+  --primary-dark: #6366f1;
+  --primary-light: #1e1b4b;
+  --success-light: #064e3b;
+  --danger-light: #450a0a;
+  --warning-light: #451a03;
+  --info-light: #1e3a5f;
+  --shadow: 0 2px 12px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: var(--transition);
+}
+input, textarea, select, button { font-family: inherit; font-size: 14px; transition: var(--transition); }
+input, textarea, select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+textarea { resize: vertical; min-height: 70px; }
+button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding: 10px 18px; font-weight: 600; }
+
+/* ===== HEADER & SYNC INDICATOR ===== */
+.app-header {
+  background: var(--surface);
+  border-bottom: 1.5px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.app-logo { font-size: 22px; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px;}
+.app-logo span { color: var(--text2); font-weight: 400; font-size: 14px; }
+.header-actions { display: flex; align-items: center; gap: 10px; }
+.sync-indicator {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+}
+.sync-indicator.synced { color: var(--success); border-color: var(--success-light); background: var(--success-light); }
+.sync-indicator.syncing { color: var(--warning); border-color: var(--warning-light); background: var(--warning-light); }
+.sync-indicator.failed { color: var(--danger); border-color: var(--danger-light); background: var(--danger-light); cursor: pointer; }
+
+.dark-toggle {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.dark-toggle:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+
+/* ===== NAV TABS ===== */
+.nav-tabs {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1.5px solid var(--border);
+  padding: 0 24px;
+  gap: 4px;
+  overflow-x: auto;
+}
+.nav-tab {
+  padding: 14px 20px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--text2);
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  border-radius: 0;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.nav-tab:hover { color: var(--primary); background: var(--primary-light); }
+.nav-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+/* ===== MAIN CONTENT ===== */
+.main-content { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ===== CARDS & BUTTONS ===== */
+.card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
+.card-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: var(--radius-sm); font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: var(--transition); }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #059669; transform: translateY(-1px); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #dc2626; }
+.btn-warning { background: var(--warning); color: #fff; }
+.btn-warning:hover { background: #d97706; }
+.btn-ghost { background: var(--surface2); color: var(--text); border: 1.5px solid var(--border); }
+.btn-ghost:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+.btn-lg { padding: 13px 26px; font-size: 16px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+/* ===== PRONUNCIATION BUTTON ===== */
+.btn-pronounce {
+  background: none; border: none; font-size: 18px; padding: 4px; cursor: pointer; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; transition: var(--transition);
+}
+.btn-pronounce:hover { background: var(--primary-light); transform: scale(1.1); }
+/* ===== FORM & STATS ===== */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--text2); }
+.form-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.stat-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: center; box-shadow: var(--shadow); transition: var(--transition); }
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.stat-number { font-size: 36px; font-weight: 800; color: var(--primary); }
+.stat-label { font-size: 13px; color: var(--text2); margin-top: 4px; font-weight: 500; }
+.stat-icon { font-size: 24px; margin-bottom: 8px; }
+
+/* ===== PROGRESS BAR ===== */
+.progress-bar-wrap { background: var(--border); border-radius: 99px; height: 10px; overflow: hidden; margin: 6px 0; }
+.progress-bar-fill { height: 100%; border-radius: 99px; background: var(--primary); transition: width 0.5s ease; }
+.progress-bar-fill.green { background: var(--success); }
+.progress-bar-fill.orange { background: var(--warning); }
+.progress-bar-fill.red { background: var(--danger); }
+
+/* ===== WORD LIST & BADGES ===== */
+.word-list { display: flex; flex-direction: column; gap: 10px; }
+.word-item { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: var(--shadow); transition: var(--transition); }
+.word-item:hover { border-color: var(--primary); transform: translateX(3px); }
+.word-item-left { flex: 1; }
+.word-item-word { font-size: 18px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.word-item-meta { font-size: 13px; color: var(--text2); margin-top: 3px; }
+.word-item-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+.badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; }
+.badge-primary { background: var(--primary-light); color: var(--primary); }
+.badge-success { background: var(--success-light); color: var(--success); }
+.badge-warning { background: var(--warning-light); color: var(--warning); }
+.badge-danger { background: var(--danger-light); color: var(--danger); }
+.badge-info { background: var(--info-light); color: var(--info); }
+
+/* ===== PRACTICE ===== */
+.practice-word-display { font-size: 52px; font-weight: 900; color: var(--primary); text-align: center; letter-spacing: 3px; margin: 16px 0; min-height: 64px; font-family: 'Courier New', monospace; }
+.practice-meaning { font-size: 18px; color: var(--text); text-align: center; background: var(--surface2); border-radius: var(--radius); padding: 16px; margin: 12px 0; border: 1.5px solid var(--border); line-height: 1.6; }
+.practice-hint { font-size: 15px; color: var(--warning); text-align: center; font-style: italic; margin: 8px 0; min-height: 26px; font-weight: 600; }
+.hint-buttons, .rating-buttons { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 12px 0; }
+.rating-btn { padding: 12px 24px; border-radius: var(--radius-sm); font-weight: 700; font-size: 15px; border: none; cursor: pointer; transition: var(--transition); }
+.rating-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.rating-forgot { background: var(--danger); color: #fff; }
+.rating-hard { background: var(--warning); color: #fff; }
+.rating-good { background: var(--info); color: #fff; }
+.rating-easy { background: var(--success); color: #fff; }
+.user-input-area { margin: 14px 0; }
+.user-input-area input { font-size: 18px; text-align: center; padding: 14px; border-radius: var(--radius); }
+
+/* ===== TOAST & MODAL ===== */
+.toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+.toast { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px 20px; box-shadow: var(--shadow-lg); font-size: 14px; font-weight: 600; color: var(--text); min-width: 260px; max-width: 380px; display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease; }
+.toast.success { border-left: 4px solid var(--success); }
+.toast.error { border-left: 4px solid var(--danger); }
+.toast.info { border-left: 4px solid var(--info); }
+.toast.warning { border-left: 4px solid var(--warning); }
+@keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--surface); border-radius: var(--radius); padding: 28px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); border: 1.5px solid var(--border); }
+.modal-title { font-size: 20px; font-weight: 800; margin-bottom: 20px; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+
+/* ===== MISC (Log, YouGlish, Tags, Empty State) ===== */
+.log-window { background: #0f172a; color: #94a3b8; border-radius: var(--radius-sm); padding: 14px; font-family: 'Courier New', monospace; font-size: 13px; min-height: 120px; max-height: 220px; overflow-y: auto; margin: 12px 0; border: 1.5px solid #334155; }
+.log-window .log-line { margin-bottom: 4px; line-height: 1.5; }
+.log-window .log-ok { color: #10b981; }
+.log-window .log-err { color: #ef4444; }
+.log-window .log-info { color: #818cf8; }
+.log-window .log-warn { color: #f59e0b; }
+.youglish-frame { width: 100%; height: 420px; border: none; border-radius: var(--radius); background: var(--surface2); }
+.search-bar { position: relative; margin-bottom: 16px; }
+.search-bar input { padding-left: 40px; }
+.search-bar::before { content: '🔍'; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; z-index: 1; }
+.tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.tag { background: var(--primary-light); color: var(--primary); border-radius: 99px; padding: 4px 12px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.tag-remove { cursor: pointer; font-size: 16px; line-height: 1; opacity: 0.6; }
+.tag-remove:hover { opacity: 1; }
+.divider { border: none; border-top: 1.5px solid var(--border); margin: 20px 0; }
+.empty-state { text-align: center; padding: 48px 20px; color: var(--text2); }
+.empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+
+/* ===== BULK IMPORT STYLES ===== */
+.bulk-container { display: flex; flex-direction: column; gap: 16px; }
+.bulk-textarea { width: 100%; min-height: 120px; font-family: monospace; }
+.bulk-word-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.bulk-word-tag { background: var(--surface2); border: 1px solid var(--border); padding: 4px 10px; border-radius: 16px; font-size: 13px; }
+.bulk-word-tag.active { background: var(--primary-light); color: var(--primary); border-color: var(--primary); font-weight: bold; }
+.bulk-word-tag.done { background: var(--success-light); color: var(--success); border-color: var(--success); }
+.bulk-word-tag.skipped { background: var(--border); color: var(--text2); text-decoration: line-through; }
+
+@media (max-width: 640px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .practice-word-display { font-size: 36px; }
+  .rating-btn { padding: 10px 16px; font-size: 14px; }
+  .app-header { padding: 0 14px; }
+  .main-content { padding: 16px 12px; }
+  .nav-tabs { padding: 0 8px; }
+  .nav-tab { padding: 12px 14px; font-size: 13px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ===== MODAL: ADD / EDIT WORD ===== -->
+<div class="modal-overlay" id="wordModal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="wordModalTitle">➕ Add New Word</span>
+      <button class="btn-pronounce" id="mPronounceBtn" onclick="pronounceModalWord()" title="Listen to pronunciation" style="display:none;">🔊</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Word *</label>
+        <input type="text" id="mWord" placeholder="e.g. ambiguous" oninput="onWordInput(this.value)"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">IPA Pronunciation</label>
+        <input type="text" id="mIpa" placeholder="e.g. /æmˈbɪɡjuəs/"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Meaning (Arabic) *</label>
+        <input type="text" id="mMeaning" placeholder="e.g. غامض"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Part of Speech</label>
+        <select id="mPos">
+          <option value="">-- Select --</option>
+          <option value="adjective">Adjective</option>
+          <option value="noun">Noun</option>
+          <option value="verb">Verb</option>
+          <option value="adverb">Adverb</option>
+          <option value="phrase">Phrase</option>
+          <option value="idiom">Idiom</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">English Definition</label>
+        <textarea id="mDefinition" placeholder="e.g. Open to more than one interpretation..."></textarea>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Example Sentences (one per line) *</label>
+        <textarea id="mExamples" placeholder="e.g. The instructions were ambiguous.&#10;His smile was ambiguous." style="min-height:90px;"></textarea>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Collocations</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="mCollocInput" placeholder="Type collocation and press Enter" onkeydown="addCollocation(event)"/>
+          <button class="btn btn-ghost btn-sm" onclick="addCollocation({key:'Enter'})">Add</button>
+        </div>
+        <div class="tag-list" id="mCollocTags"></div>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Mnemonic / Memory Tip</label>
+        <textarea id="mMnemonic" placeholder="e.g. AMBIguous = AMBI means both sides, like ambidextrous..."></textarea>
+      </div>
+    </div>
+    
+    <!-- Gemini Lookup Status -->
+    <div id="lookupStatus" style="display:none; margin-top:12px;">
+      <div class="log-window" id="lookupLog"></div>
+    </div>
+    
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeWordModal()">Cancel</button>
+      <button class="btn btn-primary" id="lookupBtn" onclick="triggerLookup()">🤖 AI Lookup</button>
+      <button class="btn btn-success" onclick="saveWord()">💾 Save Word</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: VIEW WORD DETAIL ===== -->
+<div class="modal-overlay" id="viewModal">
+  <div class="modal">
+    <div id="viewModalContent"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeViewModal()">Close</button>
+      <button class="btn btn-primary" onclick="editFromView()">✏️ Edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APP HEADER ===== -->
+<header class="app-header">
+  <div class="app-logo">
+    📚 VocabCoach <span>V2</span>
+  </div>
+  <div class="header-actions">
+    <div id="syncIndicator" class="sync-indicator synced" style="display:none;" onclick="forceSync()">
+      🟢 Synced
+    </div>
+    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙 Dark Mode</button>
+  </div>
+</header>
+
+<!-- ===== NAV TABS ===== -->
+<nav class="nav-tabs" id="navTabs">
+  <button class="nav-tab active" onclick="showTab('dashboard')">🏠 Dashboard</button>
+  <button class="nav-tab" onclick="showTab('practice')">🧠 Practice</button>
+  <button class="nav-tab" onclick="showTab('vocabulary')">📖 Vocabulary</button>
+  <button class="nav-tab" onclick="showTab('bulk-import')">📥 Bulk Import</button>
+  <button class="nav-tab" onclick="showTab('youglish')">🎙️ YouGlish</button>
+  <button class="nav-tab" onclick="showTab('settings')">⚙️ Settings</button>
+</nav>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="main-content">
+
+<!-- ========== TAB: DASHBOARD ========== -->
+  <div class="tab-panel active" id="tab-dashboard">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div class="stat-number" id="statTotal">0</div>
+        <div class="stat-label">Total Words</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🔥</div>
+        <div class="stat-number" id="statDue">0</div>
+        <div class="stat-label">Due for Review</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-number" id="statMastered">0</div>
+        <div class="stat-label">Mastered</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-number" id="statStreak">0</div>
+        <div class="stat-label">Day Streak</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-number" id="statAccuracy">0%</div>
+        <div class="stat-label">Accuracy</div>
+      </div>
+    </div>
+    
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+      <div class="card">
+        <div class="card-title">📊 Proficiency Distribution</div>
+        <div style="display:flex;flex-direction:column;gap:12px;" id="proficiencyBars"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">⚠️ Weakest Words</div>
+        <div id="weakestWords">
+          <div class="empty-state">
+            <div class="empty-state-icon">🌱</div>
+            <div class="empty-state-text">Practice more to identify weak words</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-title">📅 Recent Activity</div>
+      <div id="recentActivity">
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <div class="empty-state-text">No activity yet. Start practicing!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== TAB: PRACTICE ========== -->
+  <div class="tab-panel" id="tab-practice">
+    <div class="card" id="practiceSetupCard">
+      <div class="card-title">🧠 Practice Session Setup</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Session Type</label>
+          <select id="practiceType">
+            <option value="due">Due for Review</option>
+            <option value="all">All Words</option>
+            <option value="weak">Weakest Words</option>
+            <option value="new">New Words Only</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Number of Words</label>
+          <select id="practiceCount">
+            <option value="5">5 words</option>
+            <option value="10" selected>10 words</option>
+            <option value="20">20 words</option>
+            <option value="all">All available</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary btn-lg" onclick="startPractice()">🚀 Start Practice</button>
+      </div>
+    </div>
+    
+    <div id="practiceSessionCard" style="display:none;">
+      <div class="card">
+        <!-- Progress -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <span style="font-size:13px; color:var(--text2); font-weight:600;" id="practiceProgress">Word 1 of 10</span>
+          <span class="badge badge-primary" id="practiceSessionScore">Score: 0</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="practiceProgressBar" style="width:0%"></div>
+        </div>
+        
+        <!-- Word Display -->
+        <div style="text-align:center; margin: 24px 0 8px;">
+          <div style="font-size:13px; color:var(--text2); font-weight:600; margin-bottom:8px;">What word means:</div>
+          <div class="practice-meaning" id="practiceMeaning">—</div>
+          <div style="font-size:13px; color:var(--text2); margin-top:8px;" id="practicePos"></div>
+        </div>
+        
+        <!-- Example sentence -->
+        <div id="practiceExampleWrap" style="display:none; margin:10px 0;">
+          <div style="font-size:13px; color:var(--text2); font-weight:600; margin-bottom:4px;">Example:</div>
+          <div style="font-style:italic; color:var(--text); background:var(--surface2); padding:12px; border-radius:var(--radius-sm); border:1.5px solid var(--border);" id="practiceExample"></div>
+        </div>
+        
+        <!-- Hint display -->
+        <div class="practice-hint" id="practiceHintDisplay"></div>
+        
+        <!-- User input -->
+        <div class="user-input-area">
+          <input type="text" id="practiceInput" placeholder="Type the word here..." onkeydown="if(event.key==='Enter') checkAnswer()"/>
+        </div>
+        
+        <!-- Hint buttons -->
+        <div class="hint-buttons">
+          <button class="btn btn-ghost btn-sm" onclick="showHint('example')">💡 Show Example</button>
+          <button class="btn btn-ghost btn-sm" onclick="showHint('first')">🔤 First Letter</button>
+          <button class="btn btn-ghost btn-sm" onclick="showHint('syllables')">🔊 Syllables</button>
+          <button class="btn btn-ghost btn-sm" onclick="showHint('ipa')">📢 IPA</button>
+          <button class="btn btn-ghost btn-sm" onclick="showHint('pronounce')">🔊 Pronounce</button>
+          <button class="btn btn-warning btn-sm" onclick="revealAnswer()">👁️ Reveal</button>
+        </div>
+        
+        <!-- Answer feedback -->
+        <div id="answerFeedback" style="display:none; margin:16px 0; padding:16px; border-radius:var(--radius); text-align:center;"></div>
+        
+        <!-- Rating buttons -->
+        <div class="rating-buttons" id="ratingButtons" style="display:none;">
+          <div style="width:100%; text-align:center; font-size:13px; color:var(--text2); font-weight:600; margin-bottom:4px;">How well did you recall it?</div>
+          <button class="rating-btn rating-forgot" onclick="rateWord(0)">😰 Forgot</button>
+          <button class="rating-btn rating-hard" onclick="rateWord(1)">😓 Hard</button>
+          <button class="rating-btn rating-good" onclick="rateWord(2)">🙂 Good</button>
+          <button class="rating-btn rating-easy" onclick="rateWord(3)">😄 Easy</button>
+        </div>
+        
+        <!-- Check button -->
+        <div style="text-align:center; margin-top:10px;">
+          <button class="btn btn-primary btn-lg" id="checkBtn" onclick="checkAnswer()">✅ Check Answer</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Session Complete -->
+    <div id="practiceCompleteCard" style="display:none;">
+      <div class="card" style="text-align:center; padding:40px;">
+        <div style="font-size:56px; margin-bottom:16px;">🎉</div>
+        <div style="font-size:26px; font-weight:800; color:var(--primary); margin-bottom:8px;">Session Complete!</div>
+        <div style="font-size:16px; color:var(--text2); margin-bottom:24px;" id="sessionSummary"></div>
+        <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+          <button class="btn btn-primary btn-lg" onclick="startPractice()">🔄 Practice Again</button>
+          <button class="btn btn-ghost btn-lg" onclick="showTab('dashboard')">🏠 Dashboard</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== TAB: VOCABULARY ========== -->
+  <div class="tab-panel" id="tab-vocabulary">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+      <div style="font-size:20px; font-weight:800; color:var(--text);">📖 My Vocabulary</div>
+      <button class="btn btn-primary" onclick="openAddWordModal()">➕ Add Word</button>
+    </div>
+    
+    <div class="card" style="padding:16px;">
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <div class="search-bar" style="flex:1; min-width:200px; margin-bottom:0;">
+          <input type="text" id="vocabSearch" placeholder="Search words..." oninput="renderVocabList()"/>
+        </div>
+        <select id="vocabFilter" onchange="renderVocabList()" style="width:auto; min-width:140px;">
+          <option value="all">All Words</option>
+          <option value="due">Due for Review</option>
+          <option value="mastered">Mastered</option>
+          <option value="learning">Still Learning</option>
+          <option value="new">New</option>
+        </select>
+        <select id="vocabSort" onchange="renderVocabList()" style="width:auto; min-width:140px;">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="az">A → Z</option>
+          <option value="za">Z → A</option>
+          <option value="due">Due Date</option>
+          <option value="weak">Weakest First</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="word-list" id="vocabList">
+      <div class="empty-state">
+        <div class="empty-state-icon">📭</div>
+        <div class="empty-state-title">No words yet</div>
+        <div class="empty-state-text">Click "Add Word" to start building your vocabulary!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== TAB: BULK IMPORT (NEW) ========== -->
+  <div class="tab-panel" id="tab-bulk-import">
+    <div class="card" id="bulkInputCard">
+      <div class="card-title">📋 Bulk Import Words</div>
+      <p style="font-size:14px; color:var(--text2); margin-bottom:14px;">Paste a list of words separated by commas, newlines, or semicolons. The AI will look up each word for you to review and confirm.</p>
+      
+      <div class="form-group">
+        <textarea id="bulkPasteArea" class="bulk-textarea" placeholder="e.g. resilient, ambiguous, scrutinize, eloquent"></textarea>
+      </div>
+      
+      <div class="form-actions" style="margin-top:16px;">
+        <button class="btn btn-primary btn-lg" onclick="startBulkImport()">🚀 Start Processing</button>
+      </div>
+    </div>
+
+    <!-- Bulk Processing UI -->
+    <div class="card" id="bulkProcessCard" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span style="font-size:14px; font-weight:700; color:var(--text);" id="bulkProgressText">Word 1 of 5</span>
+        <button class="btn btn-danger btn-sm" onclick="stopBulkImport()">🛑 Stop</button>
+      </div>
+      
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="bulkProgressBar" style="width:0%"></div>
+      </div>
+      
+      <!-- Word Queue Preview -->
+      <div class="bulk-word-preview" id="bulkWordQueue"></div>
+      
+      <hr class="divider"/>
+      
+      <!-- Current Word Editor (Reuses modal styles) -->
+      <div id="bulkEditorArea" style="opacity:0.5; pointer-events:none;">
+        <div class="modal-title" style="margin-bottom:16px; font-size:18px;">
+          Reviewing: <span id="bulkCurrentWordDisplay" style="color:var(--primary);"></span>
+        </div>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Word *</label>
+            <input type="text" id="bWord" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">IPA Pronunciation</label>
+            <input type="text" id="bIpa" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Meaning (Arabic) *</label>
+            <input type="text" id="bMeaning" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Part of Speech</label>
+            <select id="bPos">
+              <option value="">-- Select --</option>
+              <option value="adjective">Adjective</option>
+              <option value="noun">Noun</option>
+              <option value="verb">Verb</option>
+              <option value="adverb">Adverb</option>
+              <option value="phrase">Phrase</option>
+              <option value="idiom">Idiom</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">English Definition</label>
+            <textarea id="bDefinition"></textarea>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Example Sentences</label>
+            <textarea id="bExamples" style="min-height:70px;"></textarea>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Mnemonic</label>
+            <textarea id="bMnemonic" style="min-height:50px;"></textarea>
+          </div>
+        </div>
+        
+        <div class="form-actions" style="margin-top:20px; justify-content:flex-end;">
+          <button class="btn btn-ghost" onclick="skipBulkWord()">⏭️ Skip Word</button>
+          <button class="btn btn-success" onclick="confirmBulkWord()">✅ Confirm & Save</button>
+        </div>
+      </div>
+      
+      <!-- Lookup status log for bulk -->
+      <div id="bulkLookupStatus" style="display:block; margin-top:16px;">
+        <div class="log-window" id="bulkLookupLog"></div>
+      </div>
+    </div>
+    
+    <!-- Bulk Summary UI -->
+    <div class="card" id="bulkSummaryCard" style="display:none; text-align:center;">
+      <div style="font-size:48px; margin-bottom:16px;">📊</div>
+      <div class="card-title" style="justify-content:center; font-size:22px;">Import Complete</div>
+      <p style="color:var(--text2); margin-bottom:20px;" id="bulkSummaryText"></p>
+      <button class="btn btn-primary" onclick="resetBulkImport()">📥 Import More Words</button>
+      <button class="btn btn-ghost" onclick="showTab('vocabulary')">📖 View Vocabulary</button>
+    </div>
+  </div>
+
+  <!-- ========== TAB: YOUGLISH ========== -->
+  <div class="tab-panel" id="tab-youglish">
+    <div class="card">
+      <div class="card-title">🎙️ YouGlish — Hear Real Pronunciation</div>
+      <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+        <input type="text" id="youglishWord" placeholder="Enter a word to hear it used..." style="flex:1;"/>
+        <select id="youglishLang" style="width:auto; min-width:130px;">
+          <option value="english">English</option>
+          <option value="british">British</option>
+          <option value="australian">Australian</option>
+        </select>
+        <button class="btn btn-primary" onclick="loadYouglish()">▶️ Search</button>
+      </div>
+      <iframe class="youglish-frame" id="youglishFrame" src="about:blank" allowfullscreen></iframe>
+    </div>
+  </div>
+
+  <!-- ========== TAB: SETTINGS ========== -->
+  <div class="tab-panel" id="tab-settings">
+    
+    <!-- Google Sheets Integration (NEW) -->
+    <div class="card">
+      <div class="card-title">☁️ Google Sheets Sync</div>
+      <p style="font-size:14px; color:var(--text2); margin-bottom:14px;">Connect a Google Sheet to back up your vocabulary and learning progress in real-time.</p>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Apps Script Web App URL</label>
+        <input type="text" id="sheetsUrlInput" placeholder="https://script.google.com/macros/s/.../exec"/>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-success" onclick="saveSheetsUrl()">💾 Save URL & Sync</button>
+        <button class="btn btn-danger btn-sm" onclick="clearSheetsUrl()">🗑️ Disconnect</button>
+      </div>
+    </div>
+
+    <!-- Pronunciation Settings (NEW) -->
+    <div class="card">
+      <div class="card-title">🔊 Pronunciation Settings</div>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <input type="checkbox" id="autoPronounceToggle" style="width:auto; transform:scale(1.2);" onchange="toggleAutoPronounce()">
+          Auto-pronounce word when answer is revealed in Practice
+        </label>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Voice Speed</label>
+        <select id="pronounceSpeed" onchange="savePronounceSpeed()">
+          <option value="0.6">🐢 Slow (0.6x)</option>
+          <option value="0.85" selected>🚶 Normal (0.85x)</option>
+          <option value="1.1">🏃 Fast (1.1x)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- API Key -->
+    <div class="card">
+      <div class="card-title">🤖 Gemini AI Configuration</div>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Gemini API Key</label>
+        <div style="display:flex; gap:10px;">
+          <input type="password" id="geminiKeyInput" placeholder="Paste your Gemini API key here..."/>
+          <button class="btn btn-ghost btn-sm" onclick="toggleKeyVisibility()" id="toggleKeyBtn" style="white-space:nowrap;">👁️ Show</button>
+        </div>
+        <div style="font-size:12px; color:var(--text2); margin-top:6px;">
+          Get your free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--primary);">aistudio.google.com</a>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-success" onclick="saveApiKey()">💾 Save Key</button>
+        <button class="btn btn-ghost" onclick="testApiKey()">🔌 Test Key</button>
+        <button class="btn btn-danger btn-sm" onclick="clearApiKey()">🗑️ Remove Key</button>
+      </div>
+      <!-- Key test log window -->
+      <div id="keyTestArea" style="display:none; margin-top:14px;">
+        <div style="font-size:13px; font-weight:600; color:var(--text2); margin-bottom:6px;">🔍 Key Test Progress:</div>
+        <div class="log-window" id="keyTestLog"></div>
+      </div>
+    </div>
+
+    <!-- Data Management (UPDATED WITH EXCEL) -->
+    <div class="card">
+      <div class="card-title">💾 Data Management</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="exportExcel()">📤 Export Excel (.xlsx)</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('importExcelFile').click()">📥 Import Excel</button>
+        <button class="btn btn-ghost" onclick="exportData('json')">📤 Export JSON</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">📥 Import JSON</button>
+        <button class="btn btn-danger" onclick="confirmClearAll()">🗑️ Clear All Data</button>
+      </div>
+      <input type="file" id="importExcelFile" accept=".xlsx, .xls" style="display:none;" onchange="importExcel(event)"/>
+      <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)"/>
+      <div style="font-size:12px; color:var(--text2); margin-top:10px;">
+        All data is stored locally in your browser. Export regularly to back up your vocabulary.
+      </div>
+    </div>
+
+    <!-- SRS Settings -->
+    <div class="card">
+      <div class="card-title">⏱️ Spaced Repetition Settings</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Forgot → Next review (days)</label>
+          <input type="number" id="srsForgot" value="1" min="1" max="7"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hard → Next review (days)</label>
+          <input type="number" id="srsHard" value="3" min="1" max="14"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Good → Next review (days)</label>
+          <input type="number" id="srsGood" value="7" min="1" max="30"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Easy → Next review (days)</label>
+          <input type="number" id="srsEasy" value="14" min="1" max="60"/>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-success" onclick="saveSrsSettings()">💾 Save SRS Settings</button>
+        <button class="btn btn-ghost" onclick="resetSrsSettings()">↩️ Reset Defaults</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ============================================================
+   DATA LAYER & STORAGE
+============================================================ */
+let vocab = [];
+let srsSettings = { forgot: 1, hard: 3, good: 7, easy: 14 };
+let practiceSession = { words: [], index: 0, score: 0, hintsUsed: 0, correct: 0, wrong: 0 };
+let currentCollocations = [];
+let editingWordId = null;
+let viewingWordId = null;
+let darkMode = false;
+
+// Pronunciation Settings
+let autoPronounce = false;
+let pronounceSpeed = 0.85;
+
+/* ---------- localStorage helpers ---------- */
+function saveVocab() {
+  try { 
+    localStorage.setItem('vocabCoach_words', JSON.stringify(vocab)); 
+    // Trigger Google Sheets sync if available
+    if (typeof syncToSheets === 'function') syncToSheets('full_sync');
+  } catch(e) { showToast('Storage error: ' + e.message, 'error'); }
+}
+
+function loadVocab() {
+  try {
+    const raw = localStorage.getItem('vocabCoach_words');
+    vocab = raw ? JSON.parse(raw) : [];
+  } catch(e) { vocab = []; }
+}
+
+function saveSrsToStorage() {
+  localStorage.setItem('vocabCoach_srs', JSON.stringify(srsSettings));
+}
+
+function loadSrsFromStorage() {
+  try {
+    const raw = localStorage.getItem('vocabCoach_srs');
+    if (raw) srsSettings = { ...srsSettings, ...JSON.parse(raw) };
+  } catch(e) {}
+}
+
+function saveStreak() {
+  const today = todayStr();
+  const data = getStreakData();
+  if (data.lastDate === today) return;
+  const yesterday = offsetDate(-1);
+  data.streak = (data.lastDate === yesterday) ? data.streak + 1 : 1;
+  data.lastDate = today;
+  localStorage.setItem('vocabCoach_streak', JSON.stringify(data));
+}
+
+function getStreakData() {
+  try {
+    const raw = localStorage.getItem('vocabCoach_streak');
+    return raw ? JSON.parse(raw) : { streak: 0, lastDate: '' };
+  } catch(e) { return { streak: 0, lastDate: '' }; }
+}
+
+function saveActivity(entry) {
+  try {
+    let log = getActivityLog();
+    log.unshift({ ...entry, timestamp: Date.now() });
+    if (log.length > 50) log = log.slice(0, 50);
+    localStorage.setItem('vocabCoach_activity', JSON.stringify(log));
+  } catch(e) {}
+}
+
+function getActivityLog() {
+  try {
+    const raw = localStorage.getItem('vocabCoach_activity');
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+/* ============================================================
+   WORD DATA MODEL
+============================================================ */
+function createWord(data) {
+  return {
+    id: data.id || (Date.now().toString() + Math.random().toString(36).slice(2, 7)),
+    word: (data.word || '').trim(),
+    ipa: (data.ipa || '').trim(),
+    meaning: (data.meaning || '').trim(),
+    pos: (data.pos || '').trim(),
+    definition: (data.definition || '').trim(),
+    examples: (data.examples || []).filter(e => e.trim()),
+    collocations: (data.collocations || []),
+    mnemonic: (data.mnemonic || '').trim(),
+    dateAdded: data.dateAdded || todayStr(),
+    nextReview: data.nextReview || todayStr(),
+    proficiency: data.proficiency || 0,        // 0=new, 1=learning, 2=familiar, 3=mastered
+    reviewCount: data.reviewCount || 0,
+    correctCount: data.correctCount || 0,
+    wrongCount: data.wrongCount || 0,
+    hintsUsed: data.hintsUsed || 0,
+    lastRating: data.lastRating || null,
+    history: data.history || [],
+    lastModified: new Date().toISOString()
+  };
+}
+
+/* ============================================================
+   DATE UTILITIES
+============================================================ */
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function offsetDate(days) {
+  const d = new Date(); d.setDate(d.getDate() + days); return d.toISOString().split('T')[0];
+}
+function addDays(dateStr, days) {
+  const d = new Date(dateStr); d.setDate(d.getDate() + days); return d.toISOString().split('T')[0];
+}
+function isDue(word) { return word.nextReview <= todayStr(); }
+function daysUntilReview(word) {
+  const today = new Date(todayStr());
+  const next = new Date(word.nextReview);
+  return Math.ceil((next - today) / 86400000);
+}
+function formatDate(str) {
+  if (!str) return '—';
+  const d = new Date(str);
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+function timeAgo(ts) {
+  if (!ts) return '—';
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+/* ============================================================
+   SRS — SPACED REPETITION
+============================================================ */
+function applyRating(word, rating) {
+  const intervals = [srsSettings.forgot, srsSettings.hard, srsSettings.good, srsSettings.easy];
+  const interval = intervals[rating];
+  word.nextReview = addDays(todayStr(), interval);
+  word.reviewCount = (word.reviewCount || 0) + 1;
+  word.lastRating = rating;
+  if (rating === 0) {
+    word.wrongCount = (word.wrongCount || 0) + 1;
+    word.proficiency = Math.max(0, (word.proficiency || 0) - 1);
+  } else if (rating === 1) {
+    word.wrongCount = (word.wrongCount || 0) + 1;
+  } else if (rating === 2) {
+    word.correctCount = (word.correctCount || 0) + 1;
+    if (word.proficiency < 3) word.proficiency = Math.min(3, (word.proficiency || 0) + 1);
+  } else if (rating === 3) {
+    word.correctCount = (word.correctCount || 0) + 1;
+    word.proficiency = Math.min(3, (word.proficiency || 0) + 2);
+  }
+  word.history = word.history || [];
+  word.history.push({ date: todayStr(), rating, interval });
+  if (word.history.length > 30) word.history = word.history.slice(-30);
+  word.lastModified = new Date().toISOString();
+  
+  if (typeof logRatingToSheets === 'function') logRatingToSheets(word, rating);
+  return word;
+}
+function getProficiencyLabel(level) { return ['🆕 New', '📘 Learning', '🔶 Familiar', '✅ Mastered'][level] || '🆕 New'; }
+function getProficiencyBadge(level) { return ['badge-info', 'badge-warning', 'badge-primary', 'badge-success'][level] || 'badge-info'; }
+function getAccuracy(word) {
+  const total = (word.correctCount || 0) + (word.wrongCount || 0);
+  if (total === 0) return null;
+  return Math.round((word.correctCount / total) * 100);
+}
+
+/* ============================================================
+   PRONUNCIATION FEATURE (WEB SPEECH API)
+============================================================ */
+function loadPronunciationSettings() {
+  const savedAuto = localStorage.getItem('vocabCoach_autoPronounce');
+  if (savedAuto !== null) autoPronounce = savedAuto === 'true';
+  const savedSpeed = localStorage.getItem('vocabCoach_pronounceSpeed');
+  if (savedSpeed) pronounceSpeed = parseFloat(savedSpeed);
+}
+
+function pronounceWord(text) {
+  if (!text || !window.speechSynthesis) return;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'en-US';
+  utter.rate = pronounceSpeed;
+  utter.pitch = 1.0;
+  utter.volume = 1.0;
+  
+  const voices = speechSynthesis.getVoices();
+  const engVoice = voices.find(v => v.lang.startsWith('en') && v.localService);
+  if (engVoice) utter.voice = engVoice;
+  
+  speechSynthesis.cancel();
+  speechSynthesis.speak(utter);
+}
+
+function toggleAutoPronounce() {
+  autoPronounce = document.getElementById('autoPronounceToggle').checked;
+  localStorage.setItem('vocabCoach_autoPronounce', autoPronounce);
+  showToast(autoPronounce ? 'Auto-pronounce enabled' : 'Auto-pronounce disabled', 'info');
+}
+
+function savePronounceSpeed() {
+  pronounceSpeed = parseFloat(document.getElementById('pronounceSpeed').value);
+  localStorage.setItem('vocabCoach_pronounceSpeed', pronounceSpeed);
+  pronounceWord("This is how fast I will speak.");
+}
+
+function pronounceModalWord() {
+  const word = document.getElementById('mWord').value;
+  if (word) pronounceWord(word);
+}
+
+/* ============================================================
+   UI UTILITIES (DARK MODE, TABS, TOAST, LOGS)
+============================================================ */
+function toggleDark() {
+  darkMode = !darkMode;
+  document.body.classList.toggle('dark', darkMode);
+  const btn = document.getElementById('darkBtn');
+  btn.textContent = darkMode ? '☀️ Light Mode' : '🌙 Dark Mode';
+  localStorage.setItem('vocabCoach_dark', darkMode ? '1' : '0');
+}
+function loadDarkMode() {
+  const saved = localStorage.getItem('vocabCoach_dark');
+  if (saved === '1') {
+    darkMode = true;
+    document.body.classList.add('dark');
+    const btn = document.getElementById('darkBtn');
+    if (btn) btn.textContent = '☀️ Light Mode';
+  }
+}
+function showTab(tabName) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById('tab-' + tabName);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + tabName + "'")) {
+      btn.classList.add('active');
+    }
+  });
+  if (tabName === 'dashboard') updateDashboard();
+  if (tabName === 'vocabulary') renderVocabList();
+  if (tabName === 'settings') loadSettingsUI();
+}
+function showToast(message, type = 'info', duration = 3500) {
+  const container = document.getElementById('toastContainer');
+  const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${message}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease forwards';
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+function logLine(containerId, message, type = 'info') {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const line = document.createElement('div');
+  line.className = `log-line log-${type}`;
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog(containerId) {
+  const el = document.getElementById(containerId);
+  if (el) el.innerHTML = '';
+}
+
+/* ============================================================
+   DASHBOARD
+============================================================ */
+function updateDashboard() {
+  const total = vocab.length;
+  const due = vocab.filter(w => isDue(w)).length;
+  const mastered = vocab.filter(w => w.proficiency === 3).length;
+  const streakData = getStreakData();
+  
+  let totalCorrect = 0, totalWrong = 0;
+  vocab.forEach(w => { totalCorrect += (w.correctCount || 0); totalWrong += (w.wrongCount || 0); });
+  const totalAnswered = totalCorrect + totalWrong;
+  const accuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+  
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statDue').textContent = due;
+  document.getElementById('statMastered').textContent = mastered;
+  document.getElementById('statStreak').textContent = streakData.streak;
+  document.getElementById('statAccuracy').textContent = accuracy + '%';
+  
+  const levels = [0, 1, 2, 3];
+  const labels = ['🆕 New', '📘 Learning', '🔶 Familiar', '✅ Mastered'];
+  const colors = ['red', 'orange', '', 'green'];
+  const counts = levels.map(l => vocab.filter(w => (w.proficiency || 0) === l).length);
+  const barsEl = document.getElementById('proficiencyBars');
+  barsEl.innerHTML = '';
+  levels.forEach((l, i) => {
+    const pct = total > 0 ? Math.round((counts[i] / total) * 100) : 0;
+    barsEl.innerHTML += `
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:4px;">
+          <span>${labels[i]}</span><span style="color:var(--text2);">${counts[i]} words (${pct}%)</span>
+        </div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill ${colors[i]}" style="width:${pct}%"></div></div>
+      </div>`;
+  });
+  
+  const weakEl = document.getElementById('weakestWords');
+  const weak = vocab.filter(w => (w.reviewCount || 0) > 0).sort((a, b) => (getAccuracy(a) ?? 100) - (getAccuracy(b) ?? 100)).slice(0, 5);
+  if (weak.length === 0) {
+    weakEl.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🌱</div><div class="empty-state-text">Practice more to identify weak words</div></div>`;
+  } else {
+    weakEl.innerHTML = weak.map(w => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div><div style="font-weight:700;color:var(--text);">${escHtml(w.word)}</div><div style="font-size:12px;color:var(--text2);">${escHtml(w.meaning)}</div></div>
+        <span class="badge badge-danger">${getAccuracy(w) !== null ? getAccuracy(w) + '%' : 'No data'}</span>
+      </div>`).join('');
+  }
+  
+  const actEl = document.getElementById('recentActivity');
+  const log = getActivityLog();
+  if (log.length === 0) {
+    actEl.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">No activity yet. Start practicing!</div></div>`;
+  } else {
+    actEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;">` + log.slice(0, 8).map(entry => `
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border);">
+        <span>${entry.message}</span><span style="color:var(--text2);white-space:nowrap;margin-left:12px;">${timeAgo(entry.timestamp)}</span>
+      </div>`).join('') + `</div>`;
+  }
+}
+
+/* ============================================================
+   SETTINGS UI LOADER
+============================================================ */
+function loadSettingsUI() {
+  document.getElementById('geminiKeyInput').value = localStorage.getItem('vocabCoach_geminiKey') || '';
+  document.getElementById('sheetsUrlInput').value = localStorage.getItem('vocabCoach_sheetsUrl') || '';
+  
+  document.getElementById('srsForgot').value = srsSettings.forgot;
+  document.getElementById('srsHard').value = srsSettings.hard;
+  document.getElementById('srsGood').value = srsSettings.good;
+  document.getElementById('srsEasy').value = srsSettings.easy;
+  
+  loadPronunciationSettings();
+  document.getElementById('autoPronounceToggle').checked = autoPronounce;
+  document.getElementById('pronounceSpeed').value = pronounceSpeed;
+}
+
+function toggleKeyVisibility() {
+  const input = document.getElementById('geminiKeyInput');
+  const btn = document.getElementById('toggleKeyBtn');
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈 Hide'; }
+  else { input.type = 'password'; btn.textContent = '👁️ Show'; }
+}
+function saveApiKey() {
+  const key = document.getElementById('geminiKeyInput').value.trim();
+  if (!key) return showToast('Please enter an API key first', 'warning');
+  localStorage.setItem('vocabCoach_geminiKey', key);
+  showToast('✅ API key saved successfully!', 'success');
+}
+function clearApiKey() {
+  if (!confirm('Remove saved API key?')) return;
+  localStorage.removeItem('vocabCoach_geminiKey');
+  document.getElementById('geminiKeyInput').value = '';
+  showToast('API key removed', 'info');
+}
+
+function saveSrsSettings() {
+  srsSettings.forgot = parseInt(document.getElementById('srsForgot').value) || 1;
+  srsSettings.hard   = parseInt(document.getElementById('srsHard').value)   || 3;
+  srsSettings.good   = parseInt(document.getElementById('srsGood').value)   || 7;
+  srsSettings.easy   = parseInt(document.getElementById('srsEasy').value)   || 14;
+  saveSrsToStorage();
+  showToast('✅ SRS settings saved!', 'success');
+}
+function resetSrsSettings() {
+  srsSettings = { forgot: 1, hard: 3, good: 7, easy: 14 };
+  saveSrsToStorage(); loadSettingsUI(); showToast('SRS settings reset', 'info');
+}
+
+/* ============================================================
+   DATA EXPORT / IMPORT (JSON & EXCEL)
+============================================================ */
+function exportData(format) {
+  if (vocab.length === 0) return showToast('No words to export', 'warning');
+  if (format === 'json') {
+    const blob = new Blob([JSON.stringify(vocab, null, 2)], { type: 'application/json' });
+    downloadBlob(blob, `vocabcoach_${todayStr()}.json`);
+    showToast(`✅ Exported ${vocab.length} words as JSON`, 'success');
+  }
+}
+function downloadBlob(blob, filename) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+}
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error('Invalid format');
+      const valid = data.filter(w => w.word && w.meaning);
+      let added = 0;
+      valid.forEach(w => {
+        if (!vocab.find(v => v.word.toLowerCase() === w.word.toLowerCase())) {
+          vocab.push({ ...createWord(w), ...w }); added++;
+        }
+      });
+      saveVocab(); renderVocabList(); updateDashboard();
+      showToast(`✅ Imported ${added} new words (${valid.length - added} duplicates skipped)`, 'success');
+    } catch(err) { showToast('Import failed: ' + err.message, 'error'); }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// --- SheetJS Excel Export ---
+function exportExcel() {
+  if (vocab.length === 0) return showToast('No words to export', 'warning');
+  try {
+    const wb = XLSX.utils.book_new();
+    
+    // Format vocabulary for Excel
+    const vocabData = vocab.map(w => ({
+      ID: w.id,
+      Word: w.word,
+      IPA: w.ipa || '',
+      ArabicMeaning: w.meaning,
+      PartOfSpeech: w.pos || '',
+      Definition: w.definition || '',
+      Examples: (w.examples || []).join(' | '),
+      Collocations: (w.collocations || []).join(' | '),
+      Mnemonic: w.mnemonic || '',
+      Proficiency: w.proficiency,
+      ReviewCount: w.reviewCount,
+      CorrectCount: w.correctCount,
+      WrongCount: w.wrongCount,
+      HintsUsed: w.hintsUsed || 0,
+      NextReviewDate: w.nextReview,
+      DateAdded: w.dateAdded,
+      LastModified: w.lastModified || new Date().toISOString()
+    }));
+    
+    const wsVocab = XLSX.utils.json_to_sheet(vocabData);
+    XLSX.utils.book_append_sheet(wb, wsVocab, "Vocabulary");
+    
+    // Write and download
+    XLSX.writeFile(wb, `vocabcoach_backup_${todayStr()}.xlsx`);
+    showToast(`✅ Exported Excel Backup (${vocab.length} words)`, 'success');
+  } catch (err) {
+    showToast('Excel export failed: ' + err.message, 'error');
+  }
+}
+
+// --- SheetJS Excel Import ---
+function importExcel(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      const json = XLSX.utils.sheet_to_json(worksheet);
+      
+      if (!json || json.length === 0) throw new Error('Excel sheet is empty');
+      
+      let added = 0;
+      json.forEach(row => {
+        if (!row.Word || !row.ArabicMeaning) return; // Skip invalid rows
+        if (!vocab.find(v => v.word.toLowerCase() === row.Word.toLowerCase())) {
+          vocab.push(createWord({
+            id: row.ID,
+            word: row.Word,
+            ipa: row.IPA,
+            meaning: row.ArabicMeaning,
+            pos: row.PartOfSpeech,
+            definition: row.Definition,
+            examples: row.Examples ? String(row.Examples).split(' | ') : [],
+            collocations: row.Collocations ? String(row.Collocations).split(' | ') : [],
+            mnemonic: row.Mnemonic,
+            proficiency: parseInt(row.Proficiency) || 0,
+            reviewCount: parseInt(row.ReviewCount) || 0,
+            correctCount: parseInt(row.CorrectCount) || 0,
+            wrongCount: parseInt(row.WrongCount) || 0,
+            hintsUsed: parseInt(row.HintsUsed) || 0,
+            nextReview: row.NextReviewDate,
+            dateAdded: row.DateAdded
+          }));
+          added++;
+        }
+      });
+      
+      saveVocab(); renderVocabList(); updateDashboard();
+      showToast(`✅ Imported ${added} words from Excel`, 'success');
+    } catch(err) {
+      showToast('Excel import failed: ' + err.message, 'error');
+    }
+    event.target.value = '';
+  };
+  reader.readArrayBuffer(file);
+}
+
+function confirmClearAll() {
+  if (!confirm('⚠️ This will permanently delete ALL your vocabulary data. Are you sure?')) return;
+  if (!confirm('Last chance — delete everything?')) return;
+  vocab = []; saveVocab();
+  localStorage.removeItem('vocabCoach_activity'); localStorage.removeItem('vocabCoach_streak');
+  renderVocabList(); updateDashboard(); showToast('All data cleared', 'warning');
+}
+
+/* ============================================================
+   VOCABULARY LIST RENDERING (UPDATED WITH PRONUNCIATION)
+============================================================ */
+function renderVocabList() {
+  const search = (document.getElementById('vocabSearch').value || '').toLowerCase().trim();
+  const filter = document.getElementById('vocabFilter').value;
+  const sort   = document.getElementById('vocabSort').value;
+  
+  let list = [...vocab];
+  if (filter === 'due')      list = list.filter(w => isDue(w));
+  if (filter === 'mastered') list = list.filter(w => w.proficiency === 3);
+  if (filter === 'learning') list = list.filter(w => w.proficiency === 1 || w.proficiency === 2);
+  if (filter === 'new')      list = list.filter(w => (w.proficiency || 0) === 0);
+  
+  if (search) {
+    list = list.filter(w =>
+      w.word.toLowerCase().includes(search) || (w.meaning || '').toLowerCase().includes(search) ||
+      (w.definition || '').toLowerCase().includes(search) || (w.collocations || []).some(c => c.toLowerCase().includes(search))
+    );
+  }
+  
+  if (sort === 'newest') list.sort((a, b) => b.dateAdded.localeCompare(a.dateAdded));
+  if (sort === 'oldest') list.sort((a, b) => a.dateAdded.localeCompare(b.dateAdded));
+  if (sort === 'az')     list.sort((a, b) => a.word.localeCompare(b.word));
+  if (sort === 'za')     list.sort((a, b) => b.word.localeCompare(a.word));
+  if (sort === 'due')    list.sort((a, b) => a.nextReview.localeCompare(b.nextReview));
+  if (sort === 'weak')   list.sort((a, b) => (getAccuracy(a) ?? 101) - (getAccuracy(b) ?? 101));
+  
+  const container = document.getElementById('vocabList');
+  if (list.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">${search ? '🔍' : '📭'}</div><div class="empty-state-title">${search ? 'No results found' : 'No words yet'}</div><div class="empty-state-text">${search ? 'Try a different search term' : 'Click "Add Word" to start building your vocabulary!'}</div></div>`;
+    return;
+  }
+  
+  container.innerHTML = list.map(w => {
+    const due = isDue(w); const daysLeft = daysUntilReview(w); const acc = getAccuracy(w);
+    const profBadge = getProficiencyBadge(w.proficiency); const profLabel = getProficiencyLabel(w.proficiency);
+    const dueBadge = due ? `<span class="badge badge-danger">🔥 Due</span>` : `<span class="badge badge-info">📅 ${daysLeft}d</span>`;
+    return `
+      <div class="word-item" id="wordItem_${w.id}">
+        <div class="word-item-left">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span class="word-item-word">
+              ${escHtml(w.word)}
+              <button class="btn-pronounce" onclick="pronounceWord('${escHtml(w.word).replace(/'/g, "\\'")}')" title="Pronounce">🔊</button>
+            </span>
+            ${w.ipa ? `<span style="font-size:13px; color:var(--text2);">${escHtml(w.ipa)}</span>` : ''}
+            <span class="badge ${profBadge}">${profLabel}</span>
+            ${dueBadge}
+          </div>
+          <div class="word-item-meta">
+            ${w.meaning ? `<span style="margin-right:12px;">🇸🇦 ${escHtml(w.meaning)}</span>` : ''}
+            ${w.pos ? `<span style="margin-right:12px; text-transform:capitalize;">📝 ${escHtml(w.pos)}</span>` : ''}
+            ${acc !== null ? `<span>🎯 ${acc}% accuracy</span>` : ''}
+          </div>
+        </div>
+        <div class="word-item-actions">
+          <button class="btn btn-ghost btn-sm" onclick="viewWord('${w.id}')" title="View Details">👁️</button>
+          <button class="btn btn-ghost btn-sm" onclick="practiceOneWord('${w.id}')" title="Quick Practice">🧠</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditWordModal('${w.id}')" title="Edit">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteWord('${w.id}')" title="Delete">🗑️</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/* ============================================================
+   VIEW WORD DETAIL MODAL
+============================================================ */
+function viewWord(id) {
+  const w = vocab.find(v => v.id === id);
+  if (!w) return;
+  viewingWordId = id;
+  const acc = getAccuracy(w);
+  const profBadge = getProficiencyBadge(w.proficiency);
+  const profLabel = getProficiencyLabel(w.proficiency);
+  const due = isDue(w);
+  
+  document.getElementById('viewModalContent').innerHTML = `
+    <div style="margin-bottom:20px;">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+        <div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="font-size:32px; font-weight:900; color:var(--primary); font-family:'Courier New',monospace;">${escHtml(w.word)}</div>
+            <button class="btn-pronounce" style="font-size:24px;" onclick="pronounceWord('${escHtml(w.word).replace(/'/g, "\\'")}')" title="Pronounce">🔊</button>
+          </div>
+          ${w.ipa ? `<div style="font-size:16px; color:var(--text2); margin-top:4px;">${escHtml(w.ipa)}</div>` : ''}
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+          <span class="badge ${profBadge}">${profLabel}</span>
+          <span class="badge ${due?'badge-danger':'badge-info'}">${due ? '🔥 Due Now' : '📅 Next: ' + formatDate(w.nextReview)}</span>
+        </div>
+      </div>
+    </div>
+    <hr class="divider"/>
+    ${w.meaning ? `<div style="margin-bottom:14px;"><div class="form-label" style="margin-bottom:4px;">🇸🇦 Arabic Meaning</div><div style="font-size:18px; font-weight:700; color:var(--text); direction:rtl; text-align:right;">${escHtml(w.meaning)}</div></div>` : ''}
+    ${w.pos ? `<div style="margin-bottom:14px;"><div class="form-label" style="margin-bottom:4px;">📝 Part of Speech</div><div style="text-transform:capitalize; font-weight:600;">${escHtml(w.pos)}</div></div>` : ''}
+    ${w.definition ? `<div style="margin-bottom:14px;"><div class="form-label" style="margin-bottom:4px;">📖 English Definition</div><div style="color:var(--text); line-height:1.6;">${escHtml(w.definition)}</div></div>` : ''}
+    ${w.examples && w.examples.length > 0 ? `<div style="margin-bottom:14px;"><div class="form-label" style="margin-bottom:6px;">💬 Example Sentences</div>${w.examples.map(ex => `<div style="background:var(--surface2); border-left:3px solid var(--primary); padding:10px 14px; border-radius:0 var(--radius-sm) var(--radius-sm) 0; margin-bottom:6px; font-style:italic; color:var(--text); line-height:1.5;">"${escHtml(ex)}"</div>`).join('')}</div>` : ''}
+    ${w.collocations && w.collocations.length > 0 ? `<div style="margin-bottom:14px;"><div class="form-label" style="margin-bottom:6px;">🔗 Collocations</div><div class="tag-list">${w.collocations.map(c => `<span class="tag">${escHtml(c)}</span>`).join('')}</div></div>` : ''}
+    ${w.mnemonic ? `<div style="margin-bottom:14px;"><div class="form-label" style="margin-bottom:4px;">🧠 Memory Tip</div><div style="background:var(--warning-light); border:1.5px solid var(--warning); border-radius:var(--radius-sm); padding:12px; color:var(--text); line-height:1.6;">💡 ${escHtml(w.mnemonic)}</div></div>` : ''}
+    <hr class="divider"/>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(110px,1fr)); gap:12px;">
+      <div style="text-align:center; background:var(--surface2); border-radius:var(--radius-sm); padding:12px; border:1.5px solid var(--border);"><div style="font-size:22px; font-weight:800; color:var(--primary);">${w.reviewCount || 0}</div><div style="font-size:12px; color:var(--text2);">Reviews</div></div>
+      <div style="text-align:center; background:var(--surface2); border-radius:var(--radius-sm); padding:12px; border:1.5px solid var(--border);"><div style="font-size:22px; font-weight:800; color:var(--success);">${w.correctCount || 0}</div><div style="font-size:12px; color:var(--text2);">Correct</div></div>
+      <div style="text-align:center; background:var(--surface2); border-radius:var(--radius-sm); padding:12px; border:1.5px solid var(--border);"><div style="font-size:22px; font-weight:800; color:var(--danger);">${w.wrongCount || 0}</div><div style="font-size:12px; color:var(--text2);">Wrong</div></div>
+      <div style="text-align:center; background:var(--surface2); border-radius:var(--radius-sm); padding:12px; border:1.5px solid var(--border);"><div style="font-size:22px; font-weight:800; color:var(--warning);">${acc !== null ? acc + '%' : '—'}</div><div style="font-size:12px; color:var(--text2);">Accuracy</div></div>
+      <div style="text-align:center; background:var(--surface2); border-radius:var(--radius-sm); padding:12px; border:1.5px solid var(--border);"><div style="font-size:22px; font-weight:800; color:var(--info);">${w.hintsUsed || 0}</div><div style="font-size:12px; color:var(--text2);">Hints Used</div></div>
+    </div>
+    <div style="margin-top:12px; font-size:12px; color:var(--text2); text-align:right;">Added: ${formatDate(w.dateAdded)}</div>`;
+  document.getElementById('viewModal').classList.add('open');
+}
+function closeViewModal() { document.getElementById('viewModal').classList.remove('open'); viewingWordId = null; }
+function editFromView() { closeViewModal(); if (viewingWordId) openEditWordModal(viewingWordId); }
+
+/* ============================================================
+   ADD / EDIT WORD MODAL
+============================================================ */
+function openAddWordModal() {
+  editingWordId = null; currentCollocations = [];
+  document.getElementById('wordModalTitle').textContent = '➕ Add New Word';
+  document.getElementById('mPronounceBtn').style.display = 'none';
+  clearWordForm();
+  document.getElementById('wordModal').classList.add('open');
+  document.getElementById('lookupStatus').style.display = 'none';
+  setTimeout(() => document.getElementById('mWord').focus(), 100);
+}
+function openEditWordModal(id) {
+  const w = vocab.find(v => v.id === id);
+  if (!w) return;
+  editingWordId = id; currentCollocations = [...(w.collocations || [])];
+  document.getElementById('wordModalTitle').textContent = '✏️ Edit Word';
+  document.getElementById('mPronounceBtn').style.display = 'inline-flex';
+  
+  document.getElementById('mWord').value = w.word || '';
+  document.getElementById('mIpa').value = w.ipa || '';
+  document.getElementById('mMeaning').value = w.meaning || '';
+  document.getElementById('mPos').value = w.pos || '';
+  document.getElementById('mDefinition').value = w.definition || '';
+  document.getElementById('mExamples').value = (w.examples || []).join('\n');
+  document.getElementById('mMnemonic').value = w.mnemonic || '';
+  renderCollocTags();
+  
+  document.getElementById('lookupStatus').style.display = 'none';
+  document.getElementById('wordModal').classList.add('open');
+}
+function closeWordModal() { document.getElementById('wordModal').classList.remove('open'); editingWordId = null; currentCollocations = []; }
+function clearWordForm() {
+  ['mWord','mIpa','mMeaning','mDefinition','mExamples','mMnemonic','mCollocInput'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('mPos').value = '';
+  currentCollocations = []; renderCollocTags();
+}
+
+function addCollocation(event) {
+  if (event.key !== 'Enter' && event.type !== 'click') return;
+  const input = document.getElementById('mCollocInput');
+  const val = input.value.trim();
+  if (!val) return;
+  if (currentCollocations.includes(val)) { showToast('Collocation already added', 'warning'); input.value = ''; return; }
+  currentCollocations.push(val); input.value = ''; renderCollocTags();
+}
+function removeCollocation(index) { currentCollocations.splice(index, 1); renderCollocTags(); }
+function renderCollocTags() {
+  const container = document.getElementById('mCollocTags');
+  if (!container) return;
+  container.innerHTML = currentCollocations.map((c, i) => `<span class="tag">${escHtml(c)} <span class="tag-remove" onclick="removeCollocation(${i})">×</span></span>`).join('');
+}
+
+let wordInputTimer = null;
+function onWordInput(value) {
+  if (value.trim().length > 0) {
+    document.getElementById('mPronounceBtn').style.display = 'inline-flex';
+  } else {
+    document.getElementById('mPronounceBtn').style.display = 'none';
+  }
+  clearTimeout(wordInputTimer);
+  if (value.trim().length < 2) return;
+  wordInputTimer = setTimeout(function() {
+    if (localStorage.getItem('vocabCoach_geminiKey')) triggerLookup();
+  }, 800);
+}
+
+/* ============================================================
+   SAVE & DELETE WORD
+============================================================ */
+function saveWord() {
+  const word = document.getElementById('mWord').value.trim();
+  const meaning = document.getElementById('mMeaning').value.trim();
+  if (!word) return (showToast('⚠️ Please enter a word', 'warning'), document.getElementById('mWord').focus());
+  if (!meaning) return (showToast('⚠️ Please enter the Arabic meaning', 'warning'), document.getElementById('mMeaning').focus());
+  
+  const examples = document.getElementById('mExamples').value.split('\n').map(e => e.trim()).filter(e => e.length > 0);
+  const wordData = {
+    word, ipa: document.getElementById('mIpa').value.trim(), meaning,
+    pos: document.getElementById('mPos').value.trim(), definition: document.getElementById('mDefinition').value.trim(),
+    examples, collocations: [...currentCollocations], mnemonic: document.getElementById('mMnemonic').value.trim(),
+    lastModified: new Date().toISOString()
+  };
+  
+  if (editingWordId) {
+    const idx = vocab.findIndex(v => v.id === editingWordId);
+    if (idx !== -1) {
+      vocab[idx] = { ...vocab[idx], ...wordData };
+      showToast(`✅ "${word}" updated successfully!`, 'success');
+      saveActivity({ message: `✏️ Updated word: "${word}"` });
+      if (typeof syncWordToSheets === 'function') syncWordToSheets(vocab[idx], 'update');
+    }
+  } else {
+    if (vocab.find(v => v.word.toLowerCase() === word.toLowerCase())) return showToast(`⚠️ "${word}" already exists`, 'warning');
+    const newWord = createWord(wordData);
+    vocab.push(newWord);
+    showToast(`✅ "${word}" added!`, 'success');
+    saveActivity({ message: `➕ Added new word: "${word}"` });
+    if (typeof syncWordToSheets === 'function') syncWordToSheets(newWord, 'add');
+  }
+  
+  saveVocab(); closeWordModal(); renderVocabList(); updateDashboard();
+}
+
+function deleteWord(id) {
+  const w = vocab.find(v => v.id === id);
+  if (!w) return;
+  if (!confirm(`Delete "${w.word}" from your library?`)) return;
+  vocab = vocab.filter(v => v.id !== id);
+  saveVocab(); renderVocabList(); updateDashboard();
+  showToast(`🗑️ "${w.word}" deleted`, 'info');
+  saveActivity({ message: `🗑️ Deleted word: "${w.word}"` });
+  if (typeof syncWordToSheets === 'function') syncWordToSheets({ id }, 'delete');
+}
+
+function practiceOneWord(id) {
+  const w = vocab.find(v => v.id === id);
+  if (!w) return;
+  practiceSession = { words: [w], index: 0, score: 0, hintsUsed: 0, correct: 0, wrong: 0 };
+  showTab('practice');
+  document.getElementById('practiceSetupCard').style.display = 'none';
+  document.getElementById('practiceCompleteCard').style.display = 'none';
+  document.getElementById('practiceSessionCard').style.display = 'block';
+  loadPracticeWord();
+}
+
+/* ============================================================
+   GEMINI AI LOOKUP ENGINE
+============================================================ */
+const GEMINI_MODEL_BLACKLIST = ['tts', 'vision', 'image', 'embedding', 'embed', 'aqa', 'retrieval', 'answer', 'bison', 'gecko', 'palm', 'code', 'preview', 'exp', 'it-'];
+const GEMINI_FALLBACK_MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+
+function isModelAllowed(modelName) { return !GEMINI_MODEL_BLACKLIST.some(bad => modelName.toLowerCase().includes(bad)); }
+function scoreModel(modelName) {
+  let score = 0; const name = modelName.toLowerCase();
+  if (name.includes('flash')) score += 30; if (name.includes('lite')) score += 10;
+  if (name.includes('1.5')) score += 5; if (name.includes('2.0')) score += 15;
+  if (name.includes('pro')) score -= 10; if (name.includes('preview')) score -= 20;
+  return score;
+}
+
+async function fetchAvailableGeminiModels(apiKey) {
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, { signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.models) return null;
+    return data.models.map(m => m.name.replace('models/', '')).filter(isModelAllowed).sort((a, b) => scoreModel(b) - scoreModel(a));
+  } catch (e) { return null; }
+}
+
+async function callGemini(apiKey, prompt, logId) {
+  const log = logId ? (msg, type) => logLine(logId, msg, type) : () => {};
+  let models = await fetchAvailableGeminiModels(apiKey) || [...GEMINI_FALLBACK_MODELS];
+  
+  for (let model of models) {
+    try {
+      const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 1024 } })
+      });
+      clearTimeout(timer); const data = await res.json();
+      if (!res.ok) continue;
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) return { text, model };
+    } catch (err) { continue; }
+  }
+  throw new Error('All Gemini models failed.');
+}
+
+function buildLookupPrompt(word) {
+  return `You are an expert English-Arabic vocabulary assistant. For the English word: "${word}"
+Return ONLY a valid JSON object with exactly these fields (no markdown):
+{ "word": "${word}", "ipa": "IPA pronunciation string", "pos": "one of: adjective, noun, verb, adverb, phrase, idiom, other", "meaning": "Arabic translation (1-4 words)", "definition": "Clear English definition in 1-2 sentences", "examples": ["Natural example 1", "Natural example 2"], "collocations": ["collocation 1", "collocation 2"], "mnemonic": "A creative memory tip" }`;
+}
+
+async function lookupWithFallback(word, logId) {
+  const log = logId ? (msg, type) => logLine(logId, msg, type) : () => {};
+  const result = {};
+  
+  log('Trying Datamuse API for definitions...', 'info');
+  try {
+    const res = await fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&md=dpsr&max=1`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.length > 0) {
+        if (data[0].defs && data[0].defs.length > 0) {
+          const defParts = data[0].defs[0].split('\t');
+          result.pos = defParts[0] || '';
+          result.definition = defParts[1] || '';
+        }
+      }
+    }
+  } catch (e) { log(`  ↳ Datamuse failed: ${e.message}`, 'warn'); }
+
+  log('Fetching collocations from Datamuse...', 'info');
+  try {
+    const res2 = await fetch(`https://api.datamuse.com/words?lc=${encodeURIComponent(word)}&max=6`);
+    if (res2.ok) {
+      const data2 = await res2.json();
+      if (data2 && data2.length > 0) result.collocations = data2.slice(0, 5).map(w => `${word} ${w.word}`);
+    }
+  } catch (e) {}
+
+  log('Fetching Arabic translation from MyMemory...', 'info');
+  try {
+    const res3 = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|ar`);
+    if (res3.ok) {
+      const data3 = await res3.json();
+      const translation = data3?.responseData?.translatedText;
+      if (translation && translation !== word) result.meaning = translation;
+    }
+  } catch (e) {}
+  
+  return result;
+}
+
+async function triggerLookup(bulkWord = null) {
+  // If bulkWord is passed, we update the bulk editor fields. Otherwise, the main modal fields.
+  const isBulk = !!bulkWord;
+  const word = isBulk ? bulkWord : document.getElementById('mWord').value.trim();
+  
+  if (!word) return showToast('Please enter a word first', 'warning');
+  
+  const apiKey = localStorage.getItem('vocabCoach_geminiKey') || '';
+  const lookupBtn = isBulk ? null : document.getElementById('lookupBtn');
+  const statusDiv = isBulk ? document.getElementById('bulkLookupStatus') : document.getElementById('lookupStatus');
+  const logId = isBulk ? 'bulkLookupLog' : 'lookupLog';
+  
+  statusDiv.style.display = 'block';
+  clearLog(logId);
+  if (lookupBtn) { lookupBtn.disabled = true; lookupBtn.textContent = '⏳ Looking up...'; }
+  logLine(logId, `Starting lookup for: "${word}"`, 'info');
+  
+  let result = {};
+  let usedGemini = false;
+  
+  if (apiKey) {
+    try {
+      const prompt = buildLookupPrompt(word);
+      const { text, model } = await callGemini(apiKey, prompt, logId);
+      const cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+      result = JSON.parse(cleaned);
+      usedGemini = true;
+      logLine(logId, `✅ AI lookup complete using ${model}`, 'ok');
+    } catch (err) { logLine(logId, `Gemini failed: ${err.message}`, 'warn'); }
+  }
+  
+  if (!usedGemini) {
+    logLine(logId, '🔄 Running fallback lookup (Datamuse + MyMemory)...', 'info');
+    result = await lookupWithFallback(word, logId);
+  }
+  
+  const prefix = isBulk ? 'b' : 'm';
+  if (result.ipa)        document.getElementById(prefix+'Ipa').value        = result.ipa;
+  if (result.meaning)    document.getElementById(prefix+'Meaning').value    = result.meaning;
+  if (result.pos)        document.getElementById(prefix+'Pos').value        = result.pos;
+  if (result.definition) document.getElementById(prefix+'Definition').value = result.definition;
+  if (result.mnemonic)   document.getElementById(prefix+'Mnemonic').value   = result.mnemonic;
+  if (result.examples && result.examples.length > 0) {
+    document.getElementById(prefix+'Examples').value = result.examples.filter(e => e && e.trim()).join('\n');
+  }
+  
+  if (!isBulk && result.collocations && result.collocations.length > 0) {
+    result.collocations.filter(c => c && c.trim()).forEach(c => {
+      if (!currentCollocations.includes(c.trim())) currentCollocations.push(c.trim());
+    });
+    renderCollocTags();
+  }
+  
+  if (lookupBtn) { lookupBtn.disabled = false; lookupBtn.textContent = '🤖 AI Lookup'; }
+  return result; // return for bulk processor
+}
+
+async function testApiKey() {
+  const key = document.getElementById('geminiKeyInput').value.trim();
+  if (!key) return showToast('Please enter an API key to test', 'warning');
+  
+  document.getElementById('keyTestArea').style.display = 'block';
+  clearLog('keyTestLog');
+  logLine('keyTestLog', '🔑 Testing API key...', 'info');
+  
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+    if (res.ok) {
+      logLine('keyTestLog', '✅ Key is valid and working!', 'ok');
+      showToast('✅ API key is valid!', 'success');
+    } else {
+      logLine('keyTestLog', `❌ Invalid API key. HTTP ${res.status}`, 'err');
+    }
+  } catch(e) { logLine('keyTestLog', `❌ Network Error: ${e.message}`, 'err'); }
+}
+
+/* ============================================================
+   PRACTICE SESSION
+============================================================ */
+function startPractice() {
+  const type  = document.getElementById('practiceType').value;
+  const count = document.getElementById('practiceCount').value;
+  let pool = [];
+  
+  if (type === 'due')  pool = vocab.filter(w => isDue(w));
+  if (type === 'all')  pool = [...vocab];
+  if (type === 'new')  pool = vocab.filter(w => (w.proficiency || 0) === 0);
+  if (type === 'weak') {
+    pool = vocab.filter(w => (w.reviewCount || 0) > 0).sort((a, b) => (getAccuracy(a) ?? 101) - (getAccuracy(b) ?? 101));
+    if (pool.length === 0) pool = [...vocab];
+  }
+  
+  if (pool.length === 0) return showToast('⚠️ No words available for this session type.', 'warning');
+  pool = shuffleArray(pool);
+  if (count !== 'all') pool = pool.slice(0, Math.min(parseInt(count), pool.length));
+  
+  practiceSession = { words: pool, index: 0, score: 0, hintsUsed: 0, correct: 0, wrong: 0, startTime: Date.now() };
+  
+  document.getElementById('practiceSetupCard').style.display = 'none';
+  document.getElementById('practiceCompleteCard').style.display = 'none';
+  document.getElementById('practiceSessionCard').style.display = 'block';
+  loadPracticeWord();
+  saveStreak();
+}
+
+function loadPracticeWord() {
+  const session = practiceSession;
+  const word = session.words[session.index];
+  if (!word) return;
+  
+  const total = session.words.length;
+  const current = session.index + 1;
+  document.getElementById('practiceProgress').textContent = `Word ${current} of ${total}`;
+  document.getElementById('practiceProgressBar').style.width = Math.round(((current - 1) / total) * 100) + '%';
+  document.getElementById('practiceSessionScore').textContent = `Score: ${session.score}`;
+  
+  document.getElementById('practiceMeaning').textContent = word.meaning || '(no meaning set)';
+  document.getElementById('practicePos').textContent = word.pos ? `[ ${word.pos} ]` : '';
+  document.getElementById('practiceHintDisplay').textContent = '';
+  document.getElementById('practiceExampleWrap').style.display = 'none';
+  
+  const input = document.getElementById('practiceInput');
+  input.value = ''; input.disabled = false; input.style.borderColor = ''; input.style.background = '';
+  
+  document.getElementById('answerFeedback').style.display = 'none';
+  document.getElementById('ratingButtons').style.display = 'none';
+  document.getElementById('checkBtn').style.display = 'block';
+  document.getElementById('checkBtn').disabled = false;
+  setTimeout(() => input.focus(), 100);
+}
+
+function showHint(type) {
+  const word = practiceSession.words[practiceSession.index];
+  if (!word) return;
+  practiceSession.hintsUsed++;
+  
+  const v = vocab.find(v => v.id === word.id);
+  if (v) v.hintsUsed = (v.hintsUsed || 0) + 1;
+  
+  const hintEl = document.getElementById('practiceHintDisplay');
+  
+  if (type === 'pronounce') {
+    pronounceWord(word.word);
+    hintEl.textContent = '🔊 Playing pronunciation...';
+    return;
+  }
+  
+  if (type === 'example') {
+    if (!word.examples || word.examples.length === 0) return hintEl.textContent = '💡 No example sentences available';
+    const ex = word.examples[Math.floor(Math.random() * word.examples.length)];
+    const blanked = ex.replace(new RegExp(word.word, 'gi'), '_'.repeat(word.word.length));
+    document.getElementById('practiceExampleWrap').style.display = 'block';
+    document.getElementById('practiceExample').textContent = blanked;
+    hintEl.textContent = '💡 Example shown (word is blanked)';
+  } else if (type === 'first') {
+    hintEl.textContent = `🔤 First letter: "${word.word[0].toUpperCase()}"`;
+  } else if (type === 'syllables') {
+    hintEl.textContent = word.ipa ? `🔊 IPA chunks: ${word.ipa.replace(/[ˈˌ]/g, ' · ').trim()}` : `🔊 Rough syllables: ${word.word.replace(/([aeiou]+)/gi, '$1·').replace(/·$/, '')}`;
+  } else if (type === 'ipa') {
+    hintEl.textContent = word.ipa ? `📢 IPA: ${word.ipa}` : '📢 No IPA available';
+  }
+}
+
+function revealAnswer() {
+  const word = practiceSession.words[practiceSession.index];
+  if (!word) return;
+  const input = document.getElementById('practiceInput');
+  input.value = word.word; input.disabled = true;
+  input.style.borderColor = 'var(--warning)'; input.style.background = 'var(--warning-light)';
+  document.getElementById('practiceHintDisplay').textContent = `👁️ Answer revealed: "${word.word}"`;
+  showAnswerFeedback(false, word, true);
+  
+  if (autoPronounce) pronounceWord(word.word);
+}
+
+function checkAnswer() {
+  const word = practiceSession.words[practiceSession.index];
+  const input = document.getElementById('practiceInput');
+  const userAns = input.value.trim().toLowerCase();
+  const correct = word.word.toLowerCase();
+  
+  if (!userAns) return (showToast('Please type your answer first', 'warning'), input.focus());
+  
+  const isCorrect = userAns === correct || levenshtein(userAns, correct) <= Math.floor(correct.length * 0.15);
+  input.disabled = true;
+  
+  if (isCorrect) {
+    input.style.borderColor = 'var(--success)'; input.style.background = 'var(--success-light)';
+    practiceSession.score += 10; practiceSession.correct++;
+    document.getElementById('practiceSessionScore').textContent = `Score: ${practiceSession.score}`;
+  } else {
+    input.style.borderColor = 'var(--danger)'; input.style.background = 'var(--danger-light)';
+    practiceSession.wrong++;
+  }
+  
+  showAnswerFeedback(isCorrect, word, false);
+  if (autoPronounce) pronounceWord(word.word);
+}
+
+function showAnswerFeedback(isCorrect, word, revealed) {
+  const feedbackEl = document.getElementById('answerFeedback');
+  const btn = document.getElementById('checkBtn');
+  
+  let headerHtml = '';
+  if (revealed) headerHtml = `<div style="font-size:18px; font-weight:800; color:var(--warning);">👁️ Answer Revealed</div>`;
+  else if (isCorrect) headerHtml = `<div style="font-size:18px; font-weight:800; color:var(--success);">✅ Correct! +10 points</div>`;
+  else headerHtml = `<div style="font-size:18px; font-weight:800; color:var(--danger);">❌ Not quite! Correct answer:</div>`;
+  
+  const styleClass = revealed ? 'warning' : (isCorrect ? 'success' : 'danger');
+  
+  let html = `
+    <div style="background:var(--${styleClass}-light); border:1.5px solid var(--${styleClass}); border-radius:var(--radius); padding:16px;">
+      ${headerHtml}
+      <div style="display:flex; justify-content:center; align-items:center; gap:12px; margin-top:8px;">
+        <div style="font-size:28px; font-weight:900; color:var(--text); font-family:'Courier New',monospace;">${escHtml(word.word)}</div>
+        <button class="btn-pronounce" onclick="pronounceWord('${escHtml(word.word).replace(/'/g, "\\'")}')" title="Pronounce">🔊</button>
+      </div>
+      ${word.ipa ? `<div style="color:var(--text2); margin-bottom:6px;">${escHtml(word.ipa)}</div>` : ''}
+      ${word.definition ? `<div style="font-size:14px; color:var(--text); line-height:1.5;">${escHtml(word.definition)}</div>` : ''}
+    </div>`;
+  
+  feedbackEl.innerHTML = html;
+  feedbackEl.style.display = 'block';
+  btn.style.display = 'none';
+  document.getElementById('ratingButtons').style.display = 'flex';
+}
+
+function rateWord(rating) {
+  const session = practiceSession;
+  const word = session.words[session.index];
+  if (!word) return;
+  
+  const vocabEntry = vocab.find(v => v.id === word.id);
+  if (vocabEntry) { applyRating(vocabEntry, rating); saveVocab(); }
+  
+  saveActivity({ message: `🧠 Practiced "${word.word}" — rated ${['Forgot','Hard','Good','Easy'][rating]}` });
+  
+  session.index++;
+  if (session.index >= session.words.length) endPracticeSession();
+  else loadPracticeWord();
+}
+
+function endPracticeSession() {
+  const session = practiceSession;
+  const duration = Math.round((Date.now() - session.startTime) / 1000);
+  const accuracy = session.words.length > 0 ? Math.round((session.correct / session.words.length) * 100) : 0;
+  
+  document.getElementById('practiceSessionCard').style.display = 'none';
+  document.getElementById('practiceCompleteCard').style.display = 'block';
+  
+  document.getElementById('sessionSummary').innerHTML = `
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:14px; margin:20px 0;">
+      <div style="background:var(--surface2); padding:16px; border-radius:var(--radius); border:1.5px solid var(--border);"><div style="font-size:28px; font-weight:800; color:var(--primary);">${session.score}</div><div style="font-size:12px; color:var(--text2);">Score</div></div>
+      <div style="background:var(--success-light); padding:16px; border-radius:var(--radius); border:1.5px solid var(--success);"><div style="font-size:28px; font-weight:800; color:var(--success);">${session.correct}</div><div style="font-size:12px; color:var(--text2);">Correct</div></div>
+      <div style="background:var(--danger-light); padding:16px; border-radius:var(--radius); border:1.5px solid var(--danger);"><div style="font-size:28px; font-weight:800; color:var(--danger);">${session.wrong}</div><div style="font-size:12px; color:var(--text2);">Wrong</div></div>
+      <div style="background:var(--info-light); padding:16px; border-radius:var(--radius); border:1.5px solid var(--info);"><div style="font-size:28px; font-weight:800; color:var(--info);">${accuracy}%</div><div style="font-size:12px; color:var(--text2);">Accuracy</div></div>
+    </div>`;
+  
+  saveActivity({ message: `🎯 Completed session: ${session.words.length} words, ${accuracy}% accuracy` });
+  updateDashboard();
+}
+
+// Utilities
+function shuffleArray(arr) { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function levenshtein(a, b) {
+  const m = a.length, n = b.length; const dp = Array.from({length: m+1}, (_, i) => Array.from({length: n+1}, (_, j) => i===0 ? j : j===0 ? i : 0));
+  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+/* ============================================================
+   YOUGLISH
+============================================================ */
+function loadYouglish() {
+  const word = document.getElementById('youglishWord').value.trim();
+  const lang = document.getElementById('youglishLang').value;
+  if (!word) return showToast('Please enter a word first', 'warning');
+  const url = `https://youglish.com/pronounce/${encodeURIComponent(word)}/${lang}/us?ngram=1`;
+  document.getElementById('youglishFrame').src = url;
+}
+
+/* ============================================================
+   BULK IMPORT PROCESSOR
+============================================================ */
+let bulkQueue = [];
+let bulkIndex = 0;
+let bulkStats = { added: 0, skipped: 0, errors: 0 };
+let isBulkRunning = false;
+
+function startBulkImport() {
+  const rawText = document.getElementById('bulkPasteArea').value;
+  if (!rawText.trim()) return showToast('Please paste some words first.', 'warning');
+  
+  // Smart parser: split by comma, newline, or semicolon
+  const rawWords = rawText.split(/[\n,;]+/).map(w => w.trim()).filter(w => w.length > 0);
+  
+  // Remove duplicates from the input itself
+  bulkQueue = [...new Set(rawWords)];
+  
+  if (bulkQueue.length === 0) return showToast('No valid words found.', 'warning');
+  
+  bulkIndex = 0;
+  bulkStats = { added: 0, skipped: 0, errors: 0 };
+  isBulkRunning = true;
+  
+  document.getElementById('bulkInputCard').style.display = 'none';
+  document.getElementById('bulkSummaryCard').style.display = 'none';
+  document.getElementById('bulkProcessCard').style.display = 'block';
+  
+  renderBulkQueue();
+  processNextBulkWord();
+}
+
+function renderBulkQueue() {
+  const container = document.getElementById('bulkWordQueue');
+  container.innerHTML = bulkQueue.map((w, i) => {
+    let className = 'bulk-word-tag';
+    if (i === bulkIndex) className += ' active';
+    else if (i < bulkIndex) className += ' done'; // Simplified, could be skipped or done
+    return `<span class="${className}" id="bulkTag_${i}">${escHtml(w)}</span>`;
+  }).join('');
+}
+
+async function processNextBulkWord() {
+  if (!isBulkRunning) return;
+  
+  if (bulkIndex >= bulkQueue.length) {
+    return finishBulkImport();
+  }
+  
+  const currentWord = bulkQueue[bulkIndex];
+  renderBulkQueue();
+  
+  document.getElementById('bulkProgressText').textContent = `Word ${bulkIndex + 1} of ${bulkQueue.length}`;
+  document.getElementById('bulkProgressBar').style.width = Math.round((bulkIndex / bulkQueue.length) * 100) + '%';
+  document.getElementById('bulkCurrentWordDisplay').textContent = currentWord;
+  
+  // Disable editor while loading
+  const editor = document.getElementById('bulkEditorArea');
+  editor.style.opacity = '0.5';
+  editor.style.pointerEvents = 'none';
+  
+  // Clear fields
+  ['bWord','bIpa','bMeaning','bDefinition','bExamples','bMnemonic'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('bPos').value = '';
+  document.getElementById('bWord').value = currentWord;
+  
+  // Check for duplicates
+  const exists = vocab.find(v => v.word.toLowerCase() === currentWord.toLowerCase());
+  if (exists) {
+    showToast(`"${currentWord}" is already in your vocabulary. You can update or skip it.`, 'info');
+  }
+  
+  // Run Auto-Lookup
+  try {
+    await triggerLookup(currentWord);
+  } catch (err) {
+    showToast(`Lookup failed for "${currentWord}"`, 'error');
+  }
+  
+  // Enable editor for user review
+  editor.style.opacity = '1';
+  editor.style.pointerEvents = 'auto';
+  document.getElementById('bMeaning').focus();
+}
+
+function confirmBulkWord() {
+  if (!isBulkRunning) return;
+  
+  const word = document.getElementById('bWord').value.trim();
+  const meaning = document.getElementById('bMeaning').value.trim();
+  if (!word || !meaning) return showToast('Word and Meaning are required', 'warning');
+  
+  const wordData = {
+    word,
+    ipa: document.getElementById('bIpa').value.trim(),
+    meaning,
+    pos: document.getElementById('bPos').value.trim(),
+    definition: document.getElementById('bDefinition').value.trim(),
+    examples: document.getElementById('bExamples').value.split('\n').filter(e => e.trim()),
+    collocations: [], // omitted from bulk UI for simplicity, could be added
+    mnemonic: document.getElementById('bMnemonic').value.trim(),
+    lastModified: new Date().toISOString()
+  };
+  
+  const existingIdx = vocab.findIndex(v => v.word.toLowerCase() === word.toLowerCase());
+  if (existingIdx !== -1) {
+    vocab[existingIdx] = { ...vocab[existingIdx], ...wordData };
+    if (typeof syncWordToSheets === 'function') syncWordToSheets(vocab[existingIdx], 'update');
+  } else {
+    const newWord = createWord(wordData);
+    vocab.push(newWord);
+    if (typeof syncWordToSheets === 'function') syncWordToSheets(newWord, 'add');
+  }
+  
+  saveVocab();
+  bulkStats.added++;
+  
+  const tag = document.getElementById(`bulkTag_${bulkIndex}`);
+  if (tag) tag.className = 'bulk-word-tag done';
+  
+  bulkIndex++;
+  processNextBulkWord();
+}
+
+function skipBulkWord() {
+  if (!isBulkRunning) return;
+  bulkStats.skipped++;
+  const tag = document.getElementById(`bulkTag_${bulkIndex}`);
+  if (tag) tag.className = 'bulk-word-tag skipped';
+  
+  bulkIndex++;
+  processNextBulkWord();
+}
+
+function stopBulkImport() {
+  isBulkRunning = false;
+  finishBulkImport();
+}
+
+function finishBulkImport() {
+  isBulkRunning = false;
+  document.getElementById('bulkProcessCard').style.display = 'none';
+  document.getElementById('bulkSummaryCard').style.display = 'block';
+  document.getElementById('bulkSummaryText').innerHTML = `
+    <strong>${bulkStats.added}</strong> words saved to vocabulary.<br>
+    <strong>${bulkStats.skipped}</strong> words skipped.
+  `;
+  renderVocabList();
+  updateDashboard();
+}
+
+function resetBulkImport() {
+  document.getElementById('bulkPasteArea').value = '';
+  document.getElementById('bulkSummaryCard').style.display = 'none';
+  document.getElementById('bulkInputCard').style.display = 'block';
+}
+
+/* ============================================================
+   GOOGLE SHEETS SYNC LOGIC
+============================================================ */
+let sheetsUrl = '';
+
+function setSyncStatus(status) {
+  const indicator = document.getElementById('syncIndicator');
+  if (!sheetsUrl) {
+    indicator.style.display = 'none';
+    return;
+  }
+  indicator.style.display = 'inline-flex';
+  indicator.className = `sync-indicator ${status}`;
+  
+  if (status === 'synced') indicator.innerHTML = '🟢 Synced';
+  else if (status === 'syncing') indicator.innerHTML = '🔄 Syncing...';
+  else if (status === 'failed') indicator.innerHTML = '🔴 Sync Failed — Retry';
+}
+
+function saveSheetsUrl() {
+  const url = document.getElementById('sheetsUrlInput').value.trim();
+  if (!url) return showToast('Please enter a valid URL', 'warning');
+  localStorage.setItem('vocabCoach_sheetsUrl', url);
+  sheetsUrl = url;
+  showToast('Google Sheets URL saved!', 'success');
+  forceSync();
+}
+
+function clearSheetsUrl() {
+  localStorage.removeItem('vocabCoach_sheetsUrl');
+  sheetsUrl = '';
+  setSyncStatus('');
+  document.getElementById('sheetsUrlInput').value = '';
+  showToast('Google Sheets disconnected', 'info');
+}
+
+async function forceSync() {
+  if (!sheetsUrl) return;
+  setSyncStatus('syncing');
+  try {
+    // 1. Fetch remote words to resolve conflicts (Remote wins if newer)
+    const res = await fetch(sheetsUrl + '?action=getAllWords');
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.words) {
+        let updatedLocal = false;
+        data.words.forEach(remoteWord => {
+          const localIdx = vocab.findIndex(v => v.id === remoteWord.id);
+          if (localIdx === -1) {
+            vocab.push(remoteWord);
+            updatedLocal = true;
+          } else {
+            const localWord = vocab[localIdx];
+            const localTime = new Date(localWord.lastModified || 0).getTime();
+            const remoteTime = new Date(remoteWord.lastModified || 0).getTime();
+            if (remoteTime > localTime) {
+              vocab[localIdx] = remoteWord;
+              updatedLocal = true;
+            }
+          }
+        });
+        if (updatedLocal) {
+          localStorage.setItem('vocabCoach_words', JSON.stringify(vocab));
+          renderVocabList();
+          updateDashboard();
+        }
+      }
+    }
+    
+    // 2. Full sync push (in a real scenario, we'd only push changed)
+    // For simplicity in this script, we rely on individual actions pushing changes.
+    setSyncStatus('synced');
+  } catch (err) {
+    console.error('Sync failed', err);
+    setSyncStatus('failed');
+  }
+}
+
+async function syncWordToSheets(wordData, actionType) {
+  if (!sheetsUrl) return;
+  setSyncStatus('syncing');
+  try {
+    const payload = { action: actionType, data: wordData };
+    const res = await fetch(sheetsUrl, {
+      method: 'POST',
+      mode: 'no-cors', // Apps script requires no-cors from frontend if not using complex setup
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    // With no-cors, we don't get a proper response object, assume success if no throw
+    setTimeout(() => setSyncStatus('synced'), 1000);
+  } catch (err) {
+    setSyncStatus('failed');
+  }
+}
+
+async function logRatingToSheets(wordData, rating) {
+  if (!sheetsUrl) return;
+  try {
+    const payload = { 
+      action: 'logRating', 
+      data: { word: wordData.word, rating: rating, correct: rating >= 2, hints: wordData.hintsUsed } 
+    };
+    await fetch(sheetsUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+  } catch(e) {}
+}
+
+
+/* ============================================================
+   EVENT LISTENERS & KEYBOARD SHORTCUTS
+============================================================ */
+document.getElementById('wordModal').addEventListener('click', function(e) { if (e.target === this) closeWordModal(); });
+document.getElementById('viewModal').addEventListener('click', function(e) { if (e.target === this) closeViewModal(); });
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeWordModal();
+    closeViewModal();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    const wordModal = document.getElementById('wordModal');
+    if (wordModal.classList.contains('open')) saveWord();
+  }
+});
+
+/* ============================================================
+   APP INITIALIZER
+============================================================ */
+(function init() {
+  loadVocab();
+  loadSrsFromStorage();
+  loadDarkMode();
+  sheetsUrl = localStorage.getItem('vocabCoach_sheetsUrl') || '';
+  
+  if (sheetsUrl) {
+    forceSync();
+  } else {
+    setSyncStatus('');
+  }
+
+  updateDashboard();
+  renderVocabList();
+  showTab('dashboard');
+  console.log(`✅ VocabCoach V2 initialized — ${vocab.length} words loaded`);
+})();
+</script>
+</body>
+</html>
+
