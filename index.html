@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Vocab Recall Coach V2</title>
 
-<!-- SheetJS for Excel Import/Export -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
@@ -54,110 +53,40 @@ body.dark {
 
 /* ===== RESET & BASE ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  transition: var(--transition);
-}
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: var(--transition); }
 input, textarea, select, button { font-family: inherit; font-size: 14px; transition: var(--transition); }
-input, textarea, select {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text);
-  outline: none;
-}
-input:focus, textarea:focus, select:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-light);
-}
+input, textarea, select { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); outline: none; }
+input:focus, textarea:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
 textarea { resize: vertical; min-height: 70px; }
 button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding: 10px 18px; font-weight: 600; }
 
 /* ===== HEADER & SYNC INDICATOR ===== */
-.app-header {
-  background: var(--surface);
-  border-bottom: 1.5px solid var(--border);
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 64px;
-  box-shadow: var(--shadow);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
+.app-header { background: var(--surface); border-bottom: 1.5px solid var(--border); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; }
 .app-logo { font-size: 22px; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px;}
 .app-logo span { color: var(--text2); font-weight: 400; font-size: 14px; }
 .header-actions { display: flex; align-items: center; gap: 10px; }
-.sync-indicator {
-  font-size: 13px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--surface2);
-  border: 1.5px solid var(--border);
-}
+.sync-indicator { font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 20px; display: flex; align-items: center; gap: 6px; background: var(--surface2); border: 1.5px solid var(--border); }
 .sync-indicator.synced { color: var(--success); border-color: var(--success-light); background: var(--success-light); }
 .sync-indicator.syncing { color: var(--warning); border-color: var(--warning-light); background: var(--warning-light); }
 .sync-indicator.failed { color: var(--danger); border-color: var(--danger-light); background: var(--danger-light); cursor: pointer; }
 
-.dark-toggle {
-  background: var(--surface2);
-  border: 1.5px solid var(--border);
-  color: var(--text);
-  padding: 8px 14px;
-  border-radius: 20px;
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-}
+.dark-toggle { background: var(--surface2); border: 1.5px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 20px; font-size: 16px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .dark-toggle:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
 
 /* ===== NAV TABS ===== */
-.nav-tabs {
-  display: flex;
-  background: var(--surface);
-  border-bottom: 1.5px solid var(--border);
-  padding: 0 24px;
-  gap: 4px;
-  overflow-x: auto;
-}
-.nav-tab {
-  padding: 14px 20px;
-  background: none;
-  border: none;
-  border-bottom: 3px solid transparent;
-  color: var(--text2);
-  font-weight: 600;
-  font-size: 14px;
-  white-space: nowrap;
-  border-radius: 0;
-  cursor: pointer;
-  transition: var(--transition);
-}
+.nav-tabs { display: flex; background: var(--surface); border-bottom: 1.5px solid var(--border); padding: 0 24px; gap: 4px; overflow-x: auto; }
+.nav-tab { padding: 14px 20px; background: none; border: none; border-bottom: 3px solid transparent; color: var(--text2); font-weight: 600; font-size: 14px; white-space: nowrap; border-radius: 0; cursor: pointer; transition: var(--transition); }
 .nav-tab:hover { color: var(--primary); background: var(--primary-light); }
 .nav-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-/* ===== MAIN CONTENT ===== */
+/* ===== MAIN CONTENT & CARDS ===== */
 .main-content { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
-
-/* ===== CARDS & BUTTONS ===== */
 .card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
 .card-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
 
+/* ===== BUTTONS ===== */
 .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: var(--radius-sm); font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: var(--transition); }
 .btn-primary { background: var(--primary); color: #fff; }
 .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
@@ -173,18 +102,18 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
 .btn-lg { padding: 13px 26px; font-size: 16px; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
 
-/* ===== PRONUNCIATION BUTTON ===== */
-.btn-pronounce {
-  background: none; border: none; font-size: 18px; padding: 4px; cursor: pointer; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; transition: var(--transition);
-}
+.btn-pronounce { background: none; border: none; font-size: 18px; padding: 4px; cursor: pointer; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; transition: var(--transition); }
 .btn-pronounce:hover { background: var(--primary-light); transform: scale(1.1); }
 
-/* ===== FORM & STATS ===== */
+/* ===== FORM, STATS & VISUAL HOOKS ===== */
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-group.full { grid-column: 1 / -1; }
 .form-label { font-size: 13px; font-weight: 600; color: var(--text2); }
 .form-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+
+.visual-hook { width: 100%; border-radius: var(--radius-sm); max-height: 220px; object-fit: cover; background: var(--surface2); border: 1.5px solid var(--border); margin-bottom: 16px; }
+.cloze-blank { font-weight: 800; color: var(--primary); border-bottom: 2px dashed var(--primary); padding: 0 4px; }
 
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 20px; }
 .stat-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: center; box-shadow: var(--shadow); transition: var(--transition); }
@@ -193,7 +122,6 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
 .stat-label { font-size: 13px; color: var(--text2); margin-top: 4px; font-weight: 500; }
 .stat-icon { font-size: 24px; margin-bottom: 8px; }
 
-/* ===== PROGRESS BAR ===== */
 .progress-bar-wrap { background: var(--border); border-radius: 99px; height: 10px; overflow: hidden; margin: 6px 0; }
 .progress-bar-fill { height: 100%; border-radius: 99px; background: var(--primary); transition: width 0.5s ease; }
 .progress-bar-fill.green { background: var(--success); }
@@ -230,7 +158,7 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
 .user-input-area { margin: 14px 0; }
 .user-input-area input { font-size: 18px; text-align: center; padding: 14px; border-radius: var(--radius); }
 
-/* ===== TOAST & MODAL ===== */
+/* ===== TOAST & MODALS ===== */
 .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
 .toast { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px 20px; box-shadow: var(--shadow-lg); font-size: 14px; font-weight: 600; color: var(--text); min-width: 260px; max-width: 380px; display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease; }
 .toast.success { border-left: 4px solid var(--success); }
@@ -246,13 +174,12 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
 .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 20px; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
 
-/* ===== COMPARISON TABLE ===== */
 .compare-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
 .compare-table th { background: var(--surface2); color: var(--text2); text-align: left; padding: 8px 12px; border: 1.5px solid var(--border); font-weight: 700; }
 .compare-table td { padding: 8px 12px; border: 1.5px solid var(--border); color: var(--text); vertical-align: top; }
 .compare-table tr:nth-child(even) td { background: var(--surface2); opacity: 0.85; }
 
-/* ===== MISC (Log, Tags, Empty State) ===== */
+/* ===== MISC ===== */
 .log-window { background: #0f172a; color: #94a3b8; border-radius: var(--radius-sm); padding: 14px; font-family: 'Courier New', monospace; font-size: 13px; min-height: 120px; max-height: 220px; overflow-y: auto; margin: 12px 0; border: 1.5px solid #334155; }
 .log-window .log-line { margin-bottom: 4px; line-height: 1.5; }
 .log-window .log-ok { color: #10b981; }
@@ -272,7 +199,6 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
 .empty-state-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
 
 /* ===== BULK IMPORT STYLES ===== */
-.bulk-container { display: flex; flex-direction: column; gap: 16px; }
 .bulk-textarea { width: 100%; min-height: 120px; font-family: monospace; }
 .bulk-word-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .bulk-word-tag { background: var(--surface2); border: 1px solid var(--border); padding: 4px 10px; border-radius: 16px; font-size: 13px; }
@@ -286,8 +212,6 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
   .rating-btn { padding: 10px 16px; font-size: 14px; }
   .app-header { padding: 0 14px; }
   .main-content { padding: 16px 12px; }
-  .nav-tabs { padding: 0 8px; }
-  .nav-tab { padding: 12px 14px; font-size: 13px; }
 }
 </style>
 </head>
@@ -296,37 +220,23 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
 <!-- ===== SECURITY GATE ===== -->
 <script>
 (function enforceAccessControl() {
-  const MASTER_PIN = "1234"; // 👈 Change this to your preferred PIN or Password
+  const MASTER_PIN = "1234";
   const AUTH_KEY = "vocabCoach_accessGranted";
-
-  if (localStorage.getItem(AUTH_KEY) === "true") {
-    return;
-  }
+  if (localStorage.getItem(AUTH_KEY) === "true") return;
 
   const userPin = prompt("🔒 Restricted Access Portal\nPlease enter your security PIN:");
-
   if (userPin === MASTER_PIN) {
     localStorage.setItem(AUTH_KEY, "true");
     alert("✅ Access granted!");
   } else {
     document.write(`
-      <div style="
-        height: 100vh; 
-        display: flex; 
-        flex-direction: column; 
-        align-items: center; 
-        justify-content: center; 
-        font-family: system-ui, sans-serif; 
-        background: #0f172a; 
-        color: #ef4444; 
-        text-align: center;
-      ">
+      <div style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: system-ui, sans-serif; background: #0f172a; color: #ef4444; text-align: center;">
         <div style="font-size: 64px; margin-bottom: 16px;">🚫</div>
         <h1 style="font-size: 32px; margin-bottom: 8px;">Access Denied</h1>
         <p style="color: #94a3b8; font-size: 16px;">Invalid PIN. Refresh the page to try again.</p>
       </div>
     `);
-    throw new Error("Access Denied: Incorrect PIN provided.");
+    throw new Error("Access Denied");
   }
 })();
 </script>
@@ -385,15 +295,12 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
       </div>
       <div class="form-group full">
         <label class="form-label">Mnemonic / Memory Tip</label>
-        <textarea id="mMnemonic" placeholder="e.g. AMBIguous = AMBI means both sides, like ambidextrous..."></textarea>
+        <textarea id="mMnemonic" placeholder="e.g. AMBIguous = AMBI means both sides..."></textarea>
       </div>
     </div>
-    
-    <!-- Gemini Lookup Status -->
     <div id="lookupStatus" style="display:none; margin-top:12px;">
       <div class="log-window" id="lookupLog"></div>
     </div>
-    
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeWordModal()">Cancel</button>
       <button class="btn btn-primary" id="lookupBtn" onclick="triggerLookup()">🤖 AI Lookup</button>
@@ -415,13 +322,9 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
 
 <!-- ===== APP HEADER ===== -->
 <header class="app-header">
-  <div class="app-logo">
-    📚 VocabCoach <span>V2</span>
-  </div>
+  <div class="app-logo">📚 VocabCoach <span>V2+FSRS</span></div>
   <div class="header-actions">
-    <div id="syncIndicator" class="sync-indicator synced" style="display:none;" onclick="forceSync()">
-      🟢 Synced
-    </div>
+    <div id="syncIndicator" class="sync-indicator synced" style="display:none;" onclick="forceSync()">🟢 Synced</div>
     <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙 Dark Mode</button>
   </div>
 </header>
@@ -434,9 +337,8 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
   <button class="nav-tab" onclick="showTab('bulk-import')">📥 Bulk Import</button>
   <button class="nav-tab" onclick="showTab('settings')">⚙️ Settings</button>
 </nav>
-
-<!-- ===== MAIN CONTENT ===== -->
 <main class="main-content">
+
   <!-- ========== TAB: DASHBOARD ========== -->
   <div class="tab-panel active" id="tab-dashboard">
     <div class="stats-grid">
@@ -494,7 +396,7 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
     </div>
   </div>
 
-  <!-- ========== TAB: PRACTICE ========== -->
+  <!-- ========== TAB: PRACTICE (UPGRADED) ========== -->
   <div class="tab-panel" id="tab-practice">
     <div class="card" id="practiceSetupCard">
       <div class="card-title">🧠 Practice Session Setup</div>
@@ -517,6 +419,14 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
             <option value="all">All available</option>
           </select>
         </div>
+        <div class="form-group full" style="flex-direction:row; align-items:center; gap:10px;">
+          <input type="checkbox" id="enableCloze" style="width:auto; transform:scale(1.2);" checked>
+          <label class="form-label" style="margin:0; cursor:pointer;" for="enableCloze">Mix in Cloze Tests (Fill-in-the-blanks)</label>
+        </div>
+        <div class="form-group full" style="flex-direction:row; align-items:center; gap:10px;">
+          <input type="checkbox" id="enableVisuals" style="width:auto; transform:scale(1.2);" checked>
+          <label class="form-label" style="margin:0; cursor:pointer;" for="enableVisuals">Show AI Visual Memory Hooks (Images)</label>
+        </div>
       </div>
       <div class="form-actions">
         <button class="btn btn-primary btn-lg" onclick="startPractice()">🚀 Start Practice</button>
@@ -534,17 +444,22 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
           <div class="progress-bar-fill" id="practiceProgressBar" style="width:0%"></div>
         </div>
         
-        <!-- Word Display -->
-        <div style="text-align:center; margin: 24px 0 8px;">
-          <div style="font-size:13px; color:var(--text2); font-weight:600; margin-bottom:8px;">What word means:</div>
-          <div class="practice-meaning" id="practiceMeaning">—</div>
-          <div style="font-size:13px; color:var(--text2); margin-top:8px;" id="practicePos"></div>
+        <!-- Visual Hook Image Area (NEW) -->
+        <div style="text-align:center; margin-top:16px;">
+          <img id="practiceVisual" class="visual-hook" style="display:none;" alt="Visual memory hook" />
         </div>
         
-        <!-- Example sentence -->
-        <div id="practiceExampleWrap" style="display:none; margin:10px 0;">
-          <div style="font-size:13px; color:var(--text2); font-weight:600; margin-bottom:4px;">Example:</div>
-          <div style="font-style:italic; color:var(--text); background:var(--surface2); padding:12px; border-radius:var(--radius-sm); border:1.5px solid var(--border);" id="practiceExample"></div>
+        <!-- Word Prompt Display -->
+        <div style="text-align:center; margin: 16px 0 8px;">
+          <div style="font-size:13px; color:var(--text2); font-weight:600; margin-bottom:8px;" id="practicePromptLabel">What word means:</div>
+          
+          <!-- Standard Meaning Prompt -->
+          <div class="practice-meaning" id="practiceMeaning"></div>
+          
+          <!-- Cloze Test Prompt (NEW) -->
+          <div class="practice-meaning" id="practiceCloze" style="display:none;"></div>
+          
+          <div style="font-size:13px; color:var(--text2); margin-top:8px;" id="practicePos"></div>
         </div>
         
         <!-- Hint display -->
@@ -552,15 +467,14 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
         
         <!-- User input -->
         <div class="user-input-area">
-          <input type="text" id="practiceInput" placeholder="Type the word here..." onkeydown="if(event.key==='Enter') checkAnswer()"/>
+          <input type="text" id="practiceInput" placeholder="Type the word here..." autocomplete="off" onkeydown="if(event.key==='Enter') checkAnswer()"/>
         </div>
         
-        <!-- Hint buttons -->
+        <!-- Expanded Hint buttons -->
         <div class="hint-buttons">
           <button class="btn btn-ghost btn-sm" onclick="showHint('pronounce')">🔊 Pronounce</button>
-          <button class="btn btn-ghost btn-sm" onclick="showHint('first')">🔤 First Letter</button>
+          <button class="btn btn-ghost btn-sm" onclick="showHint('first')">🔤 1st Letter</button>
           <button class="btn btn-ghost btn-sm" onclick="showHint('syllables')">🔊 Syllables</button>
-          <button class="btn btn-ghost btn-sm" onclick="showHint('ipa')">📢 IPA</button>
           <button class="btn btn-ghost btn-sm" onclick="showHint('pos')">📝 POS</button>
           <button class="btn btn-ghost btn-sm" onclick="showHint('definition')">📖 Definition</button>
           <button class="btn btn-ghost btn-sm" onclick="showHint('example')">💡 Example</button>
@@ -572,13 +486,13 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
         <!-- Answer feedback -->
         <div id="answerFeedback" style="display:none; margin:16px 0; padding:16px; border-radius:var(--radius); text-align:center;"></div>
         
-        <!-- Rating buttons -->
+        <!-- Rating buttons (Required for FSRS Algorithm) -->
         <div class="rating-buttons" id="ratingButtons" style="display:none;">
           <div style="width:100%; text-align:center; font-size:13px; color:var(--text2); font-weight:600; margin-bottom:4px;">How well did you recall it?</div>
-          <button class="rating-btn rating-forgot" onclick="rateWord(0)">😰 Forgot</button>
-          <button class="rating-btn rating-hard" onclick="rateWord(1)">😓 Hard</button>
-          <button class="rating-btn rating-good" onclick="rateWord(2)">🙂 Good</button>
-          <button class="rating-btn rating-easy" onclick="rateWord(3)">😄 Easy</button>
+          <button class="rating-btn rating-forgot" onclick="rateWord(1)">😰 Forgot</button> <!-- FSRS Rating 1 -->
+          <button class="rating-btn rating-hard" onclick="rateWord(2)">😓 Hard</button>   <!-- FSRS Rating 2 -->
+          <button class="rating-btn rating-good" onclick="rateWord(3)">🙂 Good</button>   <!-- FSRS Rating 3 -->
+          <button class="rating-btn rating-easy" onclick="rateWord(4)">😄 Easy</button>   <!-- FSRS Rating 4 -->
         </div>
         
         <!-- Check button -->
@@ -794,7 +708,6 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
         <button class="btn btn-ghost" onclick="testApiKey()">🔌 Test Key</button>
         <button class="btn btn-danger btn-sm" onclick="clearApiKey()">🗑️ Remove Key</button>
       </div>
-      <!-- Key test log window -->
       <div id="keyTestArea" style="display:none; margin-top:14px;">
         <div style="font-size:13px; font-weight:600; color:var(--text2); margin-bottom:6px;">🔍 Key Test Progress:</div>
         <div class="log-window" id="keyTestLog"></div>
@@ -813,37 +726,30 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
       </div>
       <input type="file" id="importExcelFile" accept=".xlsx, .xls" style="display:none;" onchange="importExcel(event)"/>
       <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)"/>
-      <div style="font-size:12px; color:var(--text2); margin-top:10px;">
-        All data is stored locally in your browser. Export regularly to back up your vocabulary.
-      </div>
     </div>
 
-    <!-- SRS Settings -->
+    <!-- FSRS Algorithm Settings (NEW) -->
     <div class="card">
-      <div class="card-title">⏱️ Spaced Repetition Settings</div>
+      <div class="card-title">🧠 FSRS Algorithm Settings</div>
+      <p style="font-size:14px; color:var(--text2); margin-bottom:14px;">This app uses the Free Spaced Repetition Scheduler (FSRS) v4 to mathematically calculate your optimal review intervals based on past memory retention.</p>
       <div class="form-grid">
         <div class="form-group">
-          <label class="form-label">Forgot → Next review (days)</label>
-          <input type="number" id="srsForgot" value="1" min="1" max="7"/>
+          <label class="form-label">Desired Retention (%)</label>
+          <input type="number" id="fsrsRetention" value="90" min="70" max="99"/>
+          <span style="font-size:12px; color:var(--text2);">Default: 90%. Higher means more frequent reviews.</span>
         </div>
         <div class="form-group">
-          <label class="form-label">Hard → Next review (days)</label>
-          <input type="number" id="srsHard" value="3" min="1" max="14"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Good → Next review (days)</label>
-          <input type="number" id="srsGood" value="7" min="1" max="30"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Easy → Next review (days)</label>
-          <input type="number" id="srsEasy" value="14" min="1" max="60"/>
+          <label class="form-label">Maximum Interval (days)</label>
+          <input type="number" id="fsrsMaxInterval" value="36500" min="1"/>
+          <span style="font-size:12px; color:var(--text2);">Maximum time before a word is reviewed again.</span>
         </div>
       </div>
       <div class="form-actions">
-        <button class="btn btn-success" onclick="saveSrsSettings()">💾 Save SRS Settings</button>
-        <button class="btn btn-ghost" onclick="resetSrsSettings()">↩️ Reset Defaults</button>
+        <button class="btn btn-success" onclick="saveFsrsSettings()">💾 Save FSRS Config</button>
+        <button class="btn btn-ghost" onclick="resetFsrsSettings()">↩️ Reset Defaults</button>
       </div>
     </div>
+
   </div>
 </main>
 <script>
@@ -851,10 +757,10 @@ button { cursor: pointer; border: none; border-radius: var(--radius-sm); padding
    DATA LAYER & STORAGE
 ============================================================ */
 let vocab = [];
-let srsSettings = { forgot: 1, hard: 3, good: 7, easy: 14 };
+let fsrsSettings = { retention: 90, maxInterval: 36500 }; // NEW: FSRS Parameters
 let practiceSession = { words: [], index: 0, score: 0, hintsUsed: 0, correct: 0, wrong: 0 };
 let currentCollocations = [];
-let currentSimilarWords = []; // NEW: Temp storage for AI-generated similar words
+let currentSimilarWords = []; 
 let editingWordId = null;
 let viewingWordId = null;
 let darkMode = false;
@@ -878,11 +784,11 @@ function loadVocab() {
   } catch(e) { vocab = []; }
 }
 
-function saveSrsToStorage() { localStorage.setItem('vocabCoach_srs', JSON.stringify(srsSettings)); }
-function loadSrsFromStorage() {
+function saveFsrsToStorage() { localStorage.setItem('vocabCoach_fsrs', JSON.stringify(fsrsSettings)); }
+function loadFsrsFromStorage() {
   try {
-    const raw = localStorage.getItem('vocabCoach_srs');
-    if (raw) srsSettings = { ...srsSettings, ...JSON.parse(raw) };
+    const raw = localStorage.getItem('vocabCoach_fsrs');
+    if (raw) fsrsSettings = { ...fsrsSettings, ...JSON.parse(raw) };
   } catch(e) {}
 }
 
@@ -933,7 +839,7 @@ function createWord(data) {
     examples: (data.examples || []).filter(e => e.trim()),
     collocations: (data.collocations || []),
     mnemonic: (data.mnemonic || '').trim(),
-    similarWords: (data.similarWords || []), // NEW FIELD for comparisons
+    similarWords: (data.similarWords || []), 
     dateAdded: data.dateAdded || todayStr(),
     nextReview: data.nextReview || todayStr(),
     proficiency: data.proficiency || 0,
@@ -943,12 +849,15 @@ function createWord(data) {
     hintsUsed: data.hintsUsed || 0,
     lastRating: data.lastRating || null,
     history: data.history || [],
+    fsrs_S: data.fsrs_S || null, // FSRS Stability
+    fsrs_D: data.fsrs_D || null, // FSRS Difficulty
+    lastReviewDate: data.lastReviewDate || null,
     lastModified: new Date().toISOString()
   };
 }
 
 /* ============================================================
-   DATE UTILITIES & SRS
+   DATE UTILITIES & FSRS ALGORITHM
 ============================================================ */
 function todayStr() { return new Date().toISOString().split('T')[0]; }
 function offsetDate(days) {
@@ -979,24 +888,60 @@ function timeAgo(ts) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function applyRating(word, rating) {
-  const intervals = [srsSettings.forgot, srsSettings.hard, srsSettings.good, srsSettings.easy];
-  const interval = intervals[rating];
+// FREE SPACED REPETITION SCHEDULER (FSRS v4) IMPLEMENTATION
+function applyFSRS(word, rating) {
+  // FSRS v4 Default Weights
+  const w = [0.4, 0.6, 2.4, 5.8, 4.93, 0.94, 0.86, 0.01, 1.49, 0.14, 0.94, 2.18, 0.05, 0.34, 1.26, 0.29, 2.61];
+  
+  let S = word.fsrs_S || 0;
+  let D = word.fsrs_D || 0;
+  let daysSinceLast = word.lastReviewDate ? Math.max(Math.ceil((new Date() - new Date(word.lastReviewDate)) / 86400000), 1) : 1;
+  
+  if (!word.fsrs_S) {
+    // First Review
+    S = w[rating - 1];
+    D = w[4] - Math.exp(w[5] * (rating - 1)) + 1;
+  } else {
+    // Subsequent Reviews
+    let R = Math.exp(Math.log(0.9) * (daysSinceLast / S));
+    D = Math.min(Math.max(D + w[6] * (rating - 3), 1), 10);
+    
+    if (rating === 1) { // Forgot
+      S = w[11] * Math.pow(D, -w[12]) * (Math.pow(S + 1, w[13]) - 1) * Math.exp(w[14] * (1 - R));
+    } else { // Hard, Good, Easy
+      let e = Math.exp(w[8]) * (11 - D) * Math.pow(S, -w[9]) * (Math.exp(w[10] * (1 - R)) - 1);
+      if (rating === 2) S = S * (1 + e * w[15]);
+      if (rating === 3) S = S * (1 + e);
+      if (rating === 4) S = S * (1 + e * w[16]);
+    }
+  }
+  
+  // Calculate next interval based on desired retention
+  const retention = (fsrsSettings.retention || 90) / 100;
+  let interval = S * (Math.pow(retention, 1 / Math.log(0.9)) - 1) * -1; 
+  interval = Math.min(Math.max(Math.round(interval), 1), fsrsSettings.maxInterval || 36500);
+  
+  // Update Word Object
+  word.fsrs_S = S;
+  word.fsrs_D = D;
   word.nextReview = addDays(todayStr(), interval);
+  word.lastReviewDate = new Date().toISOString();
   word.reviewCount = (word.reviewCount || 0) + 1;
   word.lastRating = rating;
-  if (rating === 0) {
+  
+  if (rating === 1) {
     word.wrongCount = (word.wrongCount || 0) + 1;
     word.proficiency = Math.max(0, (word.proficiency || 0) - 1);
-  } else if (rating === 1) {
-    word.wrongCount = (word.wrongCount || 0) + 1;
   } else if (rating === 2) {
+    word.wrongCount = (word.wrongCount || 0) + 1;
+  } else if (rating === 3) {
     word.correctCount = (word.correctCount || 0) + 1;
     if (word.proficiency < 3) word.proficiency = Math.min(3, (word.proficiency || 0) + 1);
-  } else if (rating === 3) {
+  } else if (rating === 4) {
     word.correctCount = (word.correctCount || 0) + 1;
     word.proficiency = Math.min(3, (word.proficiency || 0) + 2);
   }
+  
   word.history = word.history || [];
   word.history.push({ date: todayStr(), rating, interval });
   if (word.history.length > 30) word.history = word.history.slice(-30);
@@ -1189,10 +1134,8 @@ function loadSettingsUI() {
   document.getElementById('geminiKeyInput').value = localStorage.getItem('vocabCoach_geminiKey') || '';
   document.getElementById('sheetsUrlInput').value = localStorage.getItem('vocabCoach_sheetsUrl') || '';
   
-  document.getElementById('srsForgot').value = srsSettings.forgot;
-  document.getElementById('srsHard').value = srsSettings.hard;
-  document.getElementById('srsGood').value = srsSettings.good;
-  document.getElementById('srsEasy').value = srsSettings.easy;
+  document.getElementById('fsrsRetention').value = fsrsSettings.retention || 90;
+  document.getElementById('fsrsMaxInterval').value = fsrsSettings.maxInterval || 36500;
   
   loadPronunciationSettings();
   document.getElementById('autoPronounceToggle').checked = autoPronounce;
@@ -1218,17 +1161,15 @@ function clearApiKey() {
   showToast('API key removed', 'info');
 }
 
-function saveSrsSettings() {
-  srsSettings.forgot = parseInt(document.getElementById('srsForgot').value) || 1;
-  srsSettings.hard   = parseInt(document.getElementById('srsHard').value)   || 3;
-  srsSettings.good   = parseInt(document.getElementById('srsGood').value)   || 7;
-  srsSettings.easy   = parseInt(document.getElementById('srsEasy').value)   || 14;
-  saveSrsToStorage();
-  showToast('✅ SRS settings saved!', 'success');
+function saveFsrsSettings() {
+  fsrsSettings.retention = parseInt(document.getElementById('fsrsRetention').value) || 90;
+  fsrsSettings.maxInterval = parseInt(document.getElementById('fsrsMaxInterval').value) || 36500;
+  saveFsrsToStorage();
+  showToast('✅ FSRS settings saved!', 'success');
 }
-function resetSrsSettings() {
-  srsSettings = { forgot: 1, hard: 3, good: 7, easy: 14 };
-  saveSrsToStorage(); loadSettingsUI(); showToast('SRS settings reset', 'info');
+function resetFsrsSettings() {
+  fsrsSettings = { retention: 90, maxInterval: 36500 };
+  saveFsrsToStorage(); loadSettingsUI(); showToast('FSRS settings reset', 'info');
 }
 
 function exportData(format) {
@@ -1273,9 +1214,10 @@ function exportExcel() {
       ID: w.id, Word: w.word, IPA: w.ipa || '', ArabicMeaning: w.meaning, PartOfSpeech: w.pos || '',
       Definition: w.definition || '', Examples: (w.examples || []).join(' | '),
       Collocations: (w.collocations || []).join(' | '), Mnemonic: w.mnemonic || '',
-      SimilarWordsJSON: JSON.stringify(w.similarWords || []), // Storing complex array as string
+      SimilarWordsJSON: JSON.stringify(w.similarWords || []), 
       Proficiency: w.proficiency, ReviewCount: w.reviewCount, CorrectCount: w.correctCount,
       WrongCount: w.wrongCount, HintsUsed: w.hintsUsed || 0, NextReviewDate: w.nextReview,
+      FSRS_S: w.fsrs_S || '', FSRS_D: w.fsrs_D || '', 
       DateAdded: w.dateAdded, LastModified: w.lastModified || new Date().toISOString()
     }));
     const wsVocab = XLSX.utils.json_to_sheet(vocabData);
@@ -1308,7 +1250,9 @@ function importExcel(event) {
             mnemonic: row.Mnemonic, similarWords: row.SimilarWordsJSON ? JSON.parse(row.SimilarWordsJSON) : [],
             proficiency: parseInt(row.Proficiency) || 0, reviewCount: parseInt(row.ReviewCount) || 0,
             correctCount: parseInt(row.CorrectCount) || 0, wrongCount: parseInt(row.WrongCount) || 0,
-            hintsUsed: parseInt(row.HintsUsed) || 0, nextReview: row.NextReviewDate, dateAdded: row.DateAdded
+            hintsUsed: parseInt(row.HintsUsed) || 0, nextReview: row.NextReviewDate, 
+            fsrs_S: parseFloat(row.FSRS_S) || null, fsrs_D: parseFloat(row.FSRS_D) || null,
+            dateAdded: row.DateAdded
           }));
           added++;
         }
@@ -1546,7 +1490,7 @@ function saveWord() {
     word, ipa: document.getElementById('mIpa').value.trim(), meaning,
     pos: document.getElementById('mPos').value.trim(), definition: document.getElementById('mDefinition').value.trim(),
     examples, collocations: [...currentCollocations], mnemonic: document.getElementById('mMnemonic').value.trim(),
-    similarWords: [...currentSimilarWords], // Attached from AI lookup memory
+    similarWords: [...currentSimilarWords], 
     lastModified: new Date().toISOString()
   };
   
@@ -1593,7 +1537,7 @@ function practiceOneWord(id) {
 }
 
 /* ============================================================
-   GEMINI AI LOOKUP ENGINE (JSON SCHEMA UPGRADE)
+   GEMINI AI LOOKUP ENGINE (STRICT JSON SCHEMA)
 ============================================================ */
 const GEMINI_MODEL_BLACKLIST = ['tts', 'vision', 'image', 'embedding', 'embed', 'aqa', 'retrieval', 'answer', 'bison', 'gecko', 'palm', 'code', 'preview', 'exp', 'it-'];
 const GEMINI_FALLBACK_MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
@@ -1621,7 +1565,6 @@ async function callGemini(apiKey, prompt, logId) {
   const log = logId ? (msg, type) => logLine(logId, msg, type) : () => {};
   let models = await fetchAvailableGeminiModels(apiKey) || [...GEMINI_FALLBACK_MODELS];
   
-  // The Strict JSON Schema
   const aiSchema = {
     type: "OBJECT",
     properties: {
@@ -1657,10 +1600,8 @@ async function callGemini(apiKey, prompt, logId) {
         body: JSON.stringify({ 
           contents: [{ parts: [{ text: prompt }] }], 
           generationConfig: { 
-            temperature: 0.3, 
-            maxOutputTokens: 1024,
-            response_mime_type: "application/json",
-            response_schema: aiSchema 
+            temperature: 0.3, maxOutputTokens: 1024,
+            response_mime_type: "application/json", response_schema: aiSchema 
           } 
         })
       });
@@ -1675,6 +1616,42 @@ async function callGemini(apiKey, prompt, logId) {
 
 function buildLookupPrompt(word) {
   return `You are an expert English-Arabic vocabulary assistant. Generate full data and metadata for the English word: "${word}". Include highly accurate, natural Arabic meanings, examples, collocations, a memory tip, and 2-3 similar vocabulary words with nuances.`;
+}
+
+async function lookupWithFallback(word, logId) {
+  const log = logId ? (msg, type) => logLine(logId, msg, type) : () => {};
+  const result = {};
+  
+  try {
+    const res = await fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&md=dpsr&max=1`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.length > 0 && data[0].defs && data[0].defs.length > 0) {
+        const defParts = data[0].defs[0].split('\t');
+        result.pos = defParts[0] || '';
+        result.definition = defParts[1] || '';
+      }
+    }
+  } catch (e) {}
+
+  try {
+    const res2 = await fetch(`https://api.datamuse.com/words?lc=${encodeURIComponent(word)}&max=6`);
+    if (res2.ok) {
+      const data2 = await res2.json();
+      if (data2 && data2.length > 0) result.collocations = data2.slice(0, 5).map(w => `${word} ${w.word}`);
+    }
+  } catch (e) {}
+
+  try {
+    const res3 = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|ar`);
+    if (res3.ok) {
+      const data3 = await res3.json();
+      const translation = data3?.responseData?.translatedText;
+      if (translation && translation !== word) result.meaning = translation;
+    }
+  } catch (e) {}
+  
+  return result;
 }
 
 async function triggerLookup(bulkWord = null) {
@@ -1694,16 +1671,21 @@ async function triggerLookup(bulkWord = null) {
   logLine(logId, `Starting lookup for: "${word}"`, 'info');
   
   let result = {};
+  let usedGemini = false;
   
   if (apiKey) {
     try {
       const prompt = buildLookupPrompt(word);
       const { text, model } = await callGemini(apiKey, prompt, logId);
-      result = JSON.parse(text); // Native JSON schema means no need to strip markdown
+      result = JSON.parse(text); 
+      usedGemini = true;
       logLine(logId, `✅ AI lookup complete using ${model}`, 'ok');
     } catch (err) { logLine(logId, `Gemini failed: ${err.message}`, 'warn'); }
-  } else {
-    logLine(logId, '⚠️ No API Key found. Only basic fallback lookups are supported.', 'warn');
+  }
+  
+  if (!usedGemini) {
+    logLine(logId, '🔄 Running fallback lookup (Datamuse + MyMemory)...', 'info');
+    result = await lookupWithFallback(word, logId);
   }
   
   const prefix = isBulk ? 'b' : 'm';
@@ -1749,7 +1731,7 @@ async function testApiKey() {
 }
 
 /* ============================================================
-   PRACTICE SESSION (WITH NEW GUIDED HINTS)
+   PRACTICE SESSION (WITH CLOZE & VISUALS)
 ============================================================ */
 function startPractice() {
   const type  = document.getElementById('practiceType').value;
@@ -1788,8 +1770,37 @@ function loadPracticeWord() {
   document.getElementById('practiceProgressBar').style.width = Math.round(((current - 1) / total) * 100) + '%';
   document.getElementById('practiceSessionScore').textContent = `Score: ${session.score}`;
   
-  document.getElementById('practiceMeaning').textContent = word.meaning || '(no meaning set)';
-  document.getElementById('practicePos').textContent = ''; // Hidden until hinted
+  // Feature: Visual Memory Hooks (Pollinations AI)
+  const visualEl = document.getElementById('practiceVisual');
+  if (document.getElementById('enableVisuals').checked) {
+    visualEl.style.display = 'block';
+    visualEl.src = 'https://image.pollinations.ai/prompt/' + encodeURIComponent('vocabulary word ' + word.word + ' illustration concept art') + '?width=800&height=300&nologo=true';
+  } else {
+    visualEl.style.display = 'none';
+  }
+  
+  // Feature: Dynamic Cloze Tests
+  const meaningEl = document.getElementById('practiceMeaning');
+  const clozeEl = document.getElementById('practiceCloze');
+  const promptLabel = document.getElementById('practicePromptLabel');
+  
+  const useCloze = document.getElementById('enableCloze').checked && word.examples && word.examples.length > 0 && Math.random() > 0.5;
+  
+  if (useCloze) {
+    const ex = word.examples[Math.floor(Math.random() * word.examples.length)];
+    const clozeStr = ex.replace(new RegExp(word.word, 'gi'), '<span class="cloze-blank">______</span>');
+    meaningEl.style.display = 'none';
+    clozeEl.style.display = 'block';
+    clozeEl.innerHTML = clozeStr;
+    promptLabel.textContent = "Fill in the blank:";
+  } else {
+    meaningEl.style.display = 'block';
+    clozeEl.style.display = 'none';
+    meaningEl.textContent = word.meaning || '(no meaning set)';
+    promptLabel.textContent = "What word means:";
+  }
+  
+  document.getElementById('practicePos').textContent = ''; 
   document.getElementById('practiceHintDisplay').textContent = '';
   document.getElementById('practiceExampleWrap').style.display = 'none';
   
@@ -1839,7 +1850,7 @@ function showHint(type) {
   } else if (type === 'compare') {
     if (word.similarWords && word.similarWords.length > 0) {
       const sim = word.similarWords[0];
-      hintEl.textContent = `🔄 Similar to: "${sim.word}" (${sim.meaning}) - Usage diff: ${sim.usage_difference}`;
+      hintEl.textContent = `🔄 Similar to: "${sim.word}" (${sim.meaning}) - Diff: ${sim.usage_difference}`;
     } else {
       hintEl.textContent = '🔄 No similar words available for comparison';
     }
@@ -1917,9 +1928,9 @@ function rateWord(rating) {
   if (!word) return;
   
   const vocabEntry = vocab.find(v => v.id === word.id);
-  if (vocabEntry) { applyRating(vocabEntry, rating); saveVocab(); }
+  if (vocabEntry) { applyFSRS(vocabEntry, rating); saveVocab(); }
   
-  saveActivity({ message: `🧠 Practiced "${word.word}" — rated ${['Forgot','Hard','Good','Easy'][rating]}` });
+  saveActivity({ message: `🧠 Practiced "${word.word}" — rated ${['Forgot','Hard','Good','Easy'][rating-1]}` });
   
   session.index++;
   if (session.index >= session.words.length) endPracticeSession();
@@ -2008,7 +2019,7 @@ async function processNextBulkWord() {
   ['bWord','bIpa','bMeaning','bDefinition','bExamples','bMnemonic'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('bPos').value = '';
   document.getElementById('bWord').value = currentWord;
-  currentSimilarWords = []; // reset memory
+  currentSimilarWords = [];
   
   const exists = vocab.find(v => v.word.toLowerCase() === currentWord.toLowerCase());
   if (exists) showToast(`"${currentWord}" is already in your vocabulary.`, 'info');
@@ -2161,7 +2172,7 @@ document.addEventListener('keydown', function(e) {
 ============================================================ */
 (function init() {
   loadVocab();
-  loadSrsFromStorage();
+  loadFsrsFromStorage();
   loadDarkMode();
   sheetsUrl = localStorage.getItem('vocabCoach_sheetsUrl') || '';
   
@@ -2171,7 +2182,7 @@ document.addEventListener('keydown', function(e) {
   updateDashboard();
   renderVocabList();
   showTab('dashboard');
-  console.log(`✅ VocabCoach V2 initialized — ${vocab.length} words loaded`);
+  console.log(`✅ VocabCoach V2+FSRS initialized — ${vocab.length} words loaded`);
 })();
 </script>
 </body>
