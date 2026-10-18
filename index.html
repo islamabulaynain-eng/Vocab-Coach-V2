@@ -1565,7 +1565,7 @@ async function callGemini(apiKey, prompt, logId) {
   const log = logId ? (msg, type) => logLine(logId, msg, type) : () => {};
   let models = await fetchAvailableGeminiModels(apiKey) || [...GEMINI_FALLBACK_MODELS];
   
-  const aiSchema = {
+const aiSchema = {
     type: "OBJECT",
     properties: {
       word: { type: "STRING" },
@@ -1578,14 +1578,15 @@ async function callGemini(apiKey, prompt, logId) {
       mnemonic: { type: "STRING" },
       similarWords: {
         type: "ARRAY",
-        description: "2-3 similar words or synonyms with their nuances",
+        description: "Exactly 2-3 similar English words or synonyms with their nuances",
         items: {
           type: "OBJECT",
           properties: {
-            word: { type: "STRING" },
-            meaning: { type: "STRING", description: "Arabic meaning" },
-            usage_difference: { type: "STRING", description: "When to use this vs the main word" }
-          }
+            word: { type: "STRING", description: "The similar English word" },
+            meaning: { type: "STRING", description: "The Arabic translation of this similar word" },
+            usage_difference: { type: "STRING", description: "A clear English explanation of when to use this word versus the main word" }
+          },
+          required: ["word", "meaning", "usage_difference"] // <-- THIS PREVENTS MALFORMED DATA
         }
       }
     },
